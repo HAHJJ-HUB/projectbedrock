@@ -18,7 +18,12 @@ def build_llm() -> LLM:
     )
 
 
-def build_crew(topic: str, scope: str = "") -> Crew:
+def build_crew(
+    topic: str,
+    scope: str = "",
+    step_callback=None,
+    task_callback=None,
+) -> Crew:
     llm = build_llm()
 
     infiltrator = create_infiltrator(llm)
@@ -156,7 +161,7 @@ def build_crew(topic: str, scope: str = "") -> Crew:
         output_file="output/report.md",
     )
 
-    return Crew(
+    crew_kwargs = dict(
         agents=[infiltrator, ghost, nexus, oracle],
         tasks=[task_discover, task_extract, task_analyze, task_report],
         process=Process.sequential,
@@ -171,3 +176,8 @@ def build_crew(topic: str, scope: str = "") -> Crew:
         },
         output_log_file="output/crew_log.txt",
     )
+    if step_callback is not None:
+        crew_kwargs["step_callback"] = step_callback
+    if task_callback is not None:
+        crew_kwargs["task_callback"] = task_callback
+    return Crew(**crew_kwargs)
