@@ -1,7 +1,7 @@
 """
 Hacker-aesthetic live terminal dashboard for intelligence research runs.
 
-Green-on-black matrix style. Each agent has a callsign and distinct color.
+Green-on-black matrix style with per-agent colors.
 Tool calls stream in real-time. Full screen takeover via Rich Live.
 """
 
@@ -33,13 +33,6 @@ C_MID      = "#00aa22"   # Mid green
 C_SURFACE  = "#020802"   # Almost-black background
 
 AGENTS = ["Infiltrator", "Ghost", "Nexus", "Oracle"]
-
-CALLSIGN = {
-    "Infiltrator": "PHANTOM-1",
-    "Ghost":       "SPECTRE",
-    "Nexus":       "CORTEX",
-    "Oracle":      "AXIOM",
-}
 
 ROLE_LINE = {
     "Infiltrator": "DEEP PENETRATION",
@@ -163,7 +156,7 @@ class TerminalDashboard:
                 ts = datetime.now().strftime("%H:%M:%S")
                 snippet = tool_input.replace("\n", " ").strip()
                 self.feed.appendleft(
-                    f"[dim]{ts}[/]  [{color}]{(CALLSIGN.get(agent, agent)):<10}[/]"
+                    f"[dim]{ts}[/]  [{color}]{agent.upper():<12}[/]"
                     f"  [bold {color}]{label:<12}[/]  [dim]{snippet}[/]"
                 )
             except Exception:
@@ -181,11 +174,10 @@ class TerminalDashboard:
             self.current_agent = name
             self.statuses[name] = "ACTIVE"
             color = AGENT_COLOR.get(name, C_MATRIX)
-            cs = CALLSIGN.get(name, name.upper())
             ts = datetime.now().strftime("%H:%M:%S")
             self.feed.appendleft(
                 f"[dim]{ts}[/]  "
-                f"[bold {color}]{'─'*3} {cs} // {name.upper()} ONLINE {'─'*3}[/]"
+                f"[bold {color}]{'─'*3} {name.upper()} ONLINE {'─'*3}[/]"
             )
 
     def finish(self) -> None:
@@ -226,7 +218,7 @@ class TerminalDashboard:
         topic_disp = (self.topic[:50] + "…") if len(self.topic) > 50 else self.topic
         elapsed = self._elapsed()
         status_txt = "BREACH COMPLETE" if self.complete else (
-            f"ACTIVE // {CALLSIGN.get(self.current_agent, 'INIT')}" if self.current_agent else "INITIALIZING"
+            f"ACTIVE // {self.current_agent.upper()}" if self.current_agent else "INITIALIZING"
         )
         status_color = C_MATRIX if self.complete else C_AMBER
 
@@ -248,18 +240,16 @@ class TerminalDashboard:
     def _agent_cell(self, name: str) -> Panel:
         status = self.statuses[name]
         color = AGENT_COLOR.get(name, C_MATRIX)
-        cs = CALLSIGN[name]
         role = ROLE_LINE[name]
         tc = self.tool_counts.get(name, 0)
 
         t = Text()
-        # Callsign + name
         if status == "ACTIVE":
-            t.append(f" {cs}\n", style=f"bold {color}")
+            t.append(f" {name.upper()}\n", style=f"bold {color}")
         elif status == "COMPLETE":
-            t.append(f" {cs}\n", style=f"dim {C_MID}")
+            t.append(f" {name.upper()}\n", style=f"dim {C_MID}")
         else:
-            t.append(f" {cs}\n", style=f"dim {C_DIM}")
+            t.append(f" {name.upper()}\n", style=f"dim {C_DIM}")
 
         t.append(f" {role}\n", style=f"dim {C_DIM}")
         t.append(" ", style="")
@@ -308,9 +298,8 @@ class TerminalDashboard:
         if self.complete:
             t.append("ALL OBJECTIVES COMPLETE", style=f"bold {C_MATRIX}")
         elif self.current_agent:
-            cs = CALLSIGN.get(self.current_agent, self.current_agent.upper())
             color = AGENT_COLOR.get(self.current_agent, C_MATRIX)
-            t.append(f"{cs} // {self.current_agent.upper()}", style=f"bold {color}")
+            t.append(self.current_agent.upper(), style=f"bold {color}")
         else:
             t.append("INITIALIZING", style=f"dim {C_DIM}")
         t.append("  ", style="")

@@ -199,17 +199,16 @@
       <div class="p-4">
         <!-- Agent lineup -->
         <div class="space-y-2 mb-4">
-          {% for callsign, name, color in [
-            ("PHANTOM-1", "Infiltrator", "var(--c-phantom)"),
-            ("SPECTRE",   "Ghost",       "var(--c-spectre)"),
-            ("CORTEX",    "Nexus",       "var(--c-cortex)"),
-            ("AXIOM",     "Oracle",      "var(--c-axiom)"),
+          {% for name, color in [
+            ("Infiltrator", "var(--c-phantom)"),
+            ("Ghost",       "var(--c-spectre)"),
+            ("Nexus",       "var(--c-cortex)"),
+            ("Oracle",      "var(--c-axiom)"),
           ] %}
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <div style="width:5px;height:5px;border-radius:50%;background:{{ color }};box-shadow:0 0 4px {{ color }}"></div>
-              <span class="mono text-xs font-bold" style="color:{{ color }}">{{ callsign }}</span>
-              <span class="mono text-xs text-zinc-700">{{ name }}</span>
+              <span class="mono text-xs font-bold" style="color:{{ color }}">{{ name }}</span>
             </div>
             <span class="badge badge-queued" style="font-size:8px">STANDBY</span>
           </div>
@@ -230,7 +229,7 @@
           </button>
         </form>
         <p class="mono text-zinc-700 mt-3 leading-relaxed" style="font-size:9px">
-          Deploys PHANTOM-1 → SPECTRE → CORTEX → AXIOM in sequence.
+          Deploys Infiltrator → Ghost → Nexus → Oracle in sequence.
           Results accumulate in memory and surface in the timeline.
         </p>
       </div>

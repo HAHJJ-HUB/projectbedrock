@@ -71,23 +71,22 @@
 
 <!-- ── Agent status panels ────────────────────────────────────────────────── -->
 <div class="grid grid-cols-4 gap-3 mb-7">
-  {% for name, callsign, role, color, cls, desc in [
-    ("PHANTOM-1", "Infiltrator", "Deep Penetration", "var(--c-phantom)", "card-phantom",
+  {% for name, role, color, cls, dot_cls, desc in [
+    ("Infiltrator", "Deep Penetration", "var(--c-phantom)", "card-phantom", "agent-dot-phantom",
      "Dorks · Paste sweeps · Archive excavation · Forum archaeology"),
-    ("SPECTRE",   "Ghost",       "Extraction Ops",   "var(--c-spectre)", "card-spectre",
+    ("Ghost",       "Extraction Ops",   "var(--c-spectre)", "card-spectre", "agent-dot-spectre",
      "Page extraction · Wayback fetch · PDF parse · Feed consumption"),
-    ("CORTEX",    "Nexus",       "Pattern Analysis",  "var(--c-cortex)",  "card-cortex",
+    ("Nexus",       "Pattern Analysis", "var(--c-cortex)",  "card-cortex",  "agent-dot-cortex",
      "Narrative forensics · Entity mapping · Contradiction detection"),
-    ("AXIOM",     "Oracle",      "Final Reporting",   "var(--c-axiom)",   "card-axiom",
+    ("Oracle",      "Final Reporting",  "var(--c-axiom)",   "card-axiom",   "agent-dot-axiom",
      "Intelligence synthesis · Confidence assessment · Cited reports"),
   ] %}
   <div class="card {{ cls }} p-4 relative">
     <div class="flex items-center justify-between mb-2">
       <span class="mono font-bold text-sm" style="color:{{ color }}">{{ name }}</span>
-      <div class="agent-dot agent-dot-{{ name.lower().replace('-1','') | replace('phantom-1','phantom') }}"
-           style="width:6px;height:6px"></div>
+      <div class="agent-dot {{ dot_cls }}" style="width:6px;height:6px"></div>
     </div>
-    <div class="mono text-zinc-500 text-xs mb-1">{{ callsign }} // {{ role }}</div>
+    <div class="mono text-zinc-500 text-xs mb-1">{{ role }}</div>
     <div class="text-zinc-700 text-xs leading-relaxed" style="font-size:10px">{{ desc }}</div>
   </div>
   {% endfor %}
