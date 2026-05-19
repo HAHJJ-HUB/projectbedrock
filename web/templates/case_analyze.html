@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ case.case_number }} — Narrative Analysis{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <a href="/cases/{{ case.id }}" class="mono text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1 mb-4">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    {{ case.case_number }} / {{ case.name }}
+  </a>
+  <div class="flex items-center gap-3 mb-1">
+    <span class="mono font-bold text-sm" style="color:#f59e0b">{{ case.case_number }}</span>
+    <span class="badge badge-{{ case.status }}">{{ case.status }}</span>
+  </div>
+  <h1 class="text-xl font-bold text-zinc-100">Narrative Analysis</h1>
+  <p class="text-zinc-500 text-sm mt-1">Certainty inflation · Framing shift · Contradiction · Language drift · Compression</p>
+</div>
+
+<div class="card p-6">
+  {% if "No stored findings" in analysis or "error" in analysis.lower() %}
+    <div class="text-center py-12">
+      <p class="mono text-xs text-zinc-600 tracking-wide mb-2">NO CORPUS AVAILABLE</p>
+      <p class="text-zinc-500 text-sm">Run intelligence gathering first to build a corpus for analysis.</p>
+      <a href="/cases/{{ case.id }}" class="btn btn-primary mt-4 inline-flex">Back to Case File</a>
+    </div>
+  {% else %}
+    <div class="prose prose-invert prose-sm max-w-none
+                [&_h2]:text-zinc-100 [&_h2]:font-bold [&_h2]:text-base [&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:pt-4 [&_h2]:border-t [&_h2]:border-[#1e1e26]
+                [&_p]:text-zinc-400 [&_p]:leading-relaxed
+                [&_li]:text-zinc-400 [&_li]:text-sm
+                [&_strong]:text-zinc-200
+                [&_code]:text-amber-400 [&_code]:bg-[#1a1408] [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono
+                [&_em]:text-zinc-500">
+      {{ analysis | replace('\n', '<br>') | safe }}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

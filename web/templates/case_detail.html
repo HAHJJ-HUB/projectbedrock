@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block title %}{{ case.case_number }} — {{ case.name }}{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="mb-6">
+  <a href="/" class="mono text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1 mb-4">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    DASHBOARD
+  </a>
+
+  <div class="flex items-start justify-between">
+    <div>
+      <div class="flex items-center gap-3 mb-2">
+        <span class="mono font-bold text-sm" style="color:#f59e0b">{{ case.case_number }}</span>
+        <span class="badge badge-{{ case.status }}">{{ case.status }}</span>
+        <span class="badge badge-{{ case.priority }}">{{ case.priority }}</span>
+        <span class="mono text-xs text-zinc-600 px-2 py-0.5 rounded-sm" style="background:#1e1e26">{{ case.subject_type }}</span>
+      </div>
+      <h1 class="text-2xl font-bold text-zinc-100">{{ case.name }}</h1>
+      {% if case.description %}
+      <p class="text-zinc-500 text-sm mt-1 max-w-2xl">{{ case.description }}</p>
+      {% endif %}
+      {% if case.tags %}
+      <div class="flex items-center gap-1 mt-2">
+        {% for tag in case.tags %}
+        <span class="mono text-xs px-2 py-0.5 rounded-sm" style="background:#1e1e26;color:#52525b">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a href="/cases/{{ case.id }}/analyze" class="btn btn-ghost">Narrative Analysis</a>
+      <form method="post" action="/cases/{{ case.id }}/status" class="inline">
+        {% if case.status == 'active' %}
+        <input type="hidden" name="status" value="closed">
+        <button type="submit" class="btn btn-ghost">Close Case</button>
+        {% elif case.status == 'closed' %}
+        <input type="hidden" name="status" value="active">
+        <button type="submit" class="btn btn-ghost">Reopen</button>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Stats bar -->
+<div class="grid grid-cols-4 gap-3 mb-6">
+  {% for label, val, color in [
+    ("Notes", stats.notes, "#f59e0b"),
+    ("Research Runs", stats.runs, "#a78bfa"),
+    ("Sources Found", stats.sources, "#22c55e"),
+    ("Opened", case.created_at[:10], "#60a5fa")
+  ] %}
+  <div class="card p-4">
+    <p class="label mb-1">{{ label }}</p>
+    <p class="mono font-bold text-lg" style="color:{{ color }}">{{ val }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Main grid -->
+<div class="grid grid-cols-3 gap-5">
+
+  <!-- Left: Timeline -->
+  <div class="col-span-2 space-y-5">
+
+    <!-- Add note -->
+    <div class="card p-5">
+      <p class="label mb-3">Add to Case File</p>
+      <form method="post" action="/cases/{{ case.id }}/notes" class="flex gap-2">
+        <input type="hidden" name="source" value="manual">
+        <textarea name="content" class="input flex-1" rows="2"
+                  placeholder="Add an observation, lead, or finding..." required></textarea>
+        <button type="submit" class="btn btn-primary self-end flex-shrink-0">Add</button>
+      </form>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card p-5">
+      <p class="label mb-5">Case Timeline</p>
+
+      {% if not notes %}
+      <div class="text-center py-8">
+        <p class="mono text-xs text-zinc-600 tracking-wide">NO ENTRIES YET</p>
+        <p class="text-zinc-700 text-xs mt-1">Add notes or run research to begin building the case file.</p>
+      </div>
+      {% else %}
+      <div class="relative space-y-4 pl-8">
+        <div class="timeline-line"></div>
+        {% for note in notes | reverse %}
+        <div class="flex items-start gap-3">
+          <div class="timeline-dot flex-shrink-0 mt-1
+            {% if note.source == 'manual' %}dot-manual
+            {% elif note.source == 'system' %}dot-system
+            {% else %}dot-agent{% endif %}
+          " style="position:absolute;left:11px"></div>
+          <div class="flex-1 ml-3">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="mono text-xs font-bold
+                {% if note.source == 'manual' %}text-amber-500
+                {% elif note.source == 'system' %}text-violet-400
+                {% else %}text-green-400{% endif %}">
+                {{ note.source | upper }}{% if note.agent %} / {{ note.agent | upper }}{% endif %}
+              </span>
+              <span class="mono text-xs text-zinc-600">{{ note.created_at[:16] | replace('T', ' ') }}</span>
+            </div>
+            <p class="text-zinc-300 text-sm leading-relaxed">{{ note.content }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Memory findings -->
+    {% if findings %}
+    <div class="card p-5">
+      <p class="label mb-4">Extracted Findings from Memory</p>
+      <div class="space-y-3">
+        {% for f in findings[:10] %}
+        <div class="border-l-2 pl-3" style="border-color:#1e1e26">
+          <p class="mono text-xs text-zinc-600 mb-1 truncate">{{ f.source_url }}</p>
+          <p class="text-zinc-400 text-xs leading-relaxed">{{ f.content[:400] }}{% if f.content | length > 400 %}…{% endif %}</p>
+        </div>
+        {% endfor %}
+        {% if findings | length > 10 %}
+        <p class="mono text-xs text-zinc-700 mt-2">+ {{ findings | length - 10 }} more findings in memory</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Right: Research runs & actions -->
+  <div class="space-y-4">
+
+    <!-- Run research -->
+    <div class="card p-5">
+      <p class="label mb-3">Run Intelligence Gathering</p>
+      <form method="post" action="/cases/{{ case.id }}/research" id="run-form">
+        <div class="mb-3">
+          <label class="label">Scope / Focus <span class="text-zinc-700">(optional)</span></label>
+          <input type="text" name="scope" class="input" placeholder="e.g. focus on 1970s documents">
+        </div>
+        <button type="submit" class="btn btn-primary w-full justify-center" id="run-btn">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M6 4v2l1.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          Initiate Research
+        </button>
+      </form>
+      <p class="mono text-xs text-zinc-700 mt-3 leading-relaxed">
+        Deploys all four agents against this subject. Results accumulate in memory and appear in the timeline.
+      </p>
+    </div>
+
+    <!-- Research run history -->
+    {% if runs %}
+    <div class="card p-5">
+      <p class="label mb-3">Research Runs</p>
+      <div class="space-y-2" id="runs-list">
+        {% for run in runs %}
+        <div class="flex items-start justify-between gap-2 py-2 border-b border-[#1e1e26] last:border-0"
+             data-run-id="{{ run.id }}" data-run-status="{{ run.status }}">
+          <div>
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="badge badge-{{ run.status }}">{{ run.status }}</span>
+              <span class="mono text-xs text-zinc-700">#{{ run.id }}</span>
+            </div>
+            <p class="mono text-xs text-zinc-600">{{ run.started_at[:16] | replace('T', ' ') }}</p>
+            {% if run.scope %}
+            <p class="text-zinc-600 text-xs mt-0.5 italic">{{ run.scope }}</p>
+            {% endif %}
+          </div>
+          <div class="text-right">
+            {% if run.sources_found %}
+            <p class="mono text-xs text-zinc-400">{{ run.sources_found }} sources</p>
+            {% endif %}
+            {% if run.error %}
+            <p class="text-red-500 text-xs">Failed</p>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Case metadata -->
+    <div class="card p-5">
+      <p class="label mb-3">Case Metadata</p>
+      <div class="space-y-2">
+        {% for key, val in [
+          ("Case No.", case.case_number),
+          ("Opened", case.created_at[:10]),
+          ("Updated", case.updated_at[:10]),
+          ("Status", case.status),
+          ("Priority", case.priority),
+        ] %}
+        <div class="flex justify-between">
+          <span class="mono text-xs text-zinc-600">{{ key }}</span>
+          <span class="mono text-xs text-zinc-400">{{ val }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Poll for running research status
+function pollRuns() {
+  const runEls = document.querySelectorAll('[data-run-status="running"]');
+  runEls.forEach(el => {
+    const runId = el.dataset.runId;
+    fetch(`/cases/{{ case.id }}/runs/${runId}/status`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.status !== 'running') {
+          window.location.reload();
+        }
+      });
+  });
+  if (runEls.length > 0) setTimeout(pollRuns, 4000);
+}
+
+pollRuns();
+
+// Disable run button on submit
+document.getElementById('run-form')?.addEventListener('submit', () => {
+  const btn = document.getElementById('run-btn');
+  btn.textContent = 'Dispatching…';
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+});
+</script>
+{% endblock %}

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CASE FILES{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            surface:  '#0c0c0f',
+            card:     '#111116',
+            border:   '#1e1e26',
+            amber:    { DEFAULT: '#f59e0b', dim: '#78350f', glow: '#fbbf24' },
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { background-color: #0c0c0f; color: #e4e4e7; font-family: 'Inter', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Scanline overlay */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .card {
+      background: #111116;
+      border: 1px solid #1e1e26;
+      border-radius: 4px;
+    }
+
+    .card-glow:hover {
+      border-color: rgba(245, 158, 11, 0.3);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.05);
+      transition: all 0.2s ease;
+    }
+
+    .amber-text { color: #f59e0b; }
+    .amber-dim  { color: #92400e; }
+
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 1px 8px;
+      border-radius: 2px;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .badge-active   { background: rgba(34,197,94,0.1);  color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+    .badge-closed   { background: rgba(113,113,122,0.1); color: #71717a; border: 1px solid rgba(113,113,122,0.2); }
+    .badge-archived { background: rgba(59,130,246,0.1);  color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+    .badge-running  { background: rgba(245,158,11,0.1);  color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+    .badge-failed   { background: rgba(239,68,68,0.1);   color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+    .badge-complete { background: rgba(34,197,94,0.1);   color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+    .badge-queued   { background: rgba(139,92,246,0.1);  color: #a78bfa; border: 1px solid rgba(139,92,246,0.2); }
+
+    .badge-critical { background: rgba(239,68,68,0.1);   color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .badge-high     { background: rgba(249,115,22,0.1);  color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
+    .badge-medium   { background: rgba(234,179,8,0.1);   color: #eab308; border: 1px solid rgba(234,179,8,0.3); }
+    .badge-low      { background: rgba(113,113,122,0.1); color: #71717a; border: 1px solid rgba(113,113,122,0.2); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background: rgba(245,158,11,0.15);
+      color: #f59e0b;
+      border-color: rgba(245,158,11,0.3);
+    }
+    .btn-primary:hover {
+      background: rgba(245,158,11,0.25);
+      border-color: rgba(245,158,11,0.5);
+      box-shadow: 0 0 12px rgba(245,158,11,0.15);
+    }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.03);
+      color: #71717a;
+      border-color: #1e1e26;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.07); color: #a1a1aa; }
+
+    .btn-danger {
+      background: rgba(239,68,68,0.1);
+      color: #ef4444;
+      border-color: rgba(239,68,68,0.2);
+    }
+    .btn-danger:hover { background: rgba(239,68,68,0.2); }
+
+    .input {
+      background: #0c0c0f;
+      border: 1px solid #1e1e26;
+      border-radius: 3px;
+      color: #e4e4e7;
+      padding: 8px 12px;
+      font-size: 13px;
+      width: 100%;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.15s;
+    }
+    .input:focus { outline: none; border-color: rgba(245,158,11,0.5); }
+    .input::placeholder { color: #3f3f46; }
+
+    .select {
+      background: #0c0c0f;
+      border: 1px solid #1e1e26;
+      border-radius: 3px;
+      color: #e4e4e7;
+      padding: 8px 12px;
+      font-size: 13px;
+      width: 100%;
+      font-family: 'JetBrains Mono', monospace;
+      cursor: pointer;
+    }
+    .select:focus { outline: none; border-color: rgba(245,158,11,0.5); }
+
+    textarea.input { resize: vertical; min-height: 80px; }
+
+    .label {
+      display: block;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #52525b;
+      margin-bottom: 6px;
+    }
+
+    .divider { border-color: #1e1e26; }
+
+    .timeline-line {
+      position: absolute;
+      left: 15px; top: 0; bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, #1e1e26, transparent);
+    }
+
+    .timeline-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      border: 1px solid;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+
+    .dot-manual  { background: rgba(245,158,11,0.2); border-color: #f59e0b; }
+    .dot-system  { background: rgba(139,92,246,0.2); border-color: #a78bfa; }
+    .dot-agent   { background: rgba(34,197,94,0.2);  border-color: #22c55e; }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #0c0c0f; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 2px; }
+
+    @keyframes pulse-amber {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .pulse-amber { animation: pulse-amber 1.5s ease-in-out infinite; }
+
+    .classified-stamp {
+      display: inline-block;
+      border: 2px solid rgba(239,68,68,0.4);
+      color: rgba(239,68,68,0.6);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      padding: 2px 8px;
+      transform: rotate(-2deg);
+      text-transform: uppercase;
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="min-h-screen">
+
+  <!-- Top nav -->
+  <nav class="border-b border-[#1e1e26] px-6 py-3 flex items-center justify-between sticky top-0 z-50"
+       style="background: rgba(12,12,15,0.95); backdrop-filter: blur(8px);">
+    <div class="flex items-center gap-6">
+      <a href="/" class="flex items-center gap-3">
+        <div class="w-6 h-6 relative">
+          <div class="absolute inset-0 border border-amber-DEFAULT opacity-60" style="border-color:#f59e0b"></div>
+          <div class="absolute inset-[3px] border border-amber-DEFAULT opacity-40" style="border-color:#f59e0b"></div>
+          <div class="absolute inset-[6px] bg-amber-DEFAULT opacity-80" style="background:#f59e0b"></div>
+        </div>
+        <span class="mono font-bold tracking-widest text-sm uppercase" style="color:#f59e0b; letter-spacing:0.25em;">
+          {% block system_name %}CASE FILES{% endblock %}
+        </span>
+      </a>
+      <div class="h-4 w-px bg-[#1e1e26]"></div>
+      <a href="/" class="text-xs mono text-zinc-500 hover:text-zinc-300 transition-colors {% if request.url.path == '/' %}text-zinc-300{% endif %}">
+        DASHBOARD
+      </a>
+      <a href="/cases/new" class="text-xs mono text-zinc-500 hover:text-zinc-300 transition-colors {% if request.url.path == '/cases/new' %}text-zinc-300{% endif %}">
+        NEW CASE
+      </a>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="mono text-xs text-zinc-600" id="clock"></span>
+      <div class="w-2 h-2 rounded-full bg-green-500 pulse-amber" style="animation: pulse-amber 3s ease-in-out infinite;"></div>
+      <span class="mono text-xs text-zinc-600">ONLINE</span>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    // Live clock
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent =
+        now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
