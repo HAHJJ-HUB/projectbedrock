@@ -7,6 +7,8 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 SERPAPI_KEY = os.getenv("SERPAPI_KEY", "")
 FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "")
+SHODAN_API_KEY = os.getenv("SHODAN_API_KEY", "")
+STACK_EXCHANGE_KEY = os.getenv("STACK_EXCHANGE_KEY", "")
 
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
 MEMORY_PATH = os.getenv("MEMORY_PATH", "./memory/chroma_db")
@@ -22,18 +24,49 @@ REQUEST_HEADERS = {
     )
 }
 
-# Paste sites to search for public content
+# ---------------------------------------------------------------------------
+# Paste / text-dump sites — all publicly indexed, no authentication required
+# ---------------------------------------------------------------------------
 PASTE_SITES = [
+    # Major general-purpose paste sites
     "pastebin.com",
     "paste.ee",
-    "ghostbin.co",
-    "hastebin.com",
     "dpaste.com",
     "rentry.co",
     "0bin.net",
+    "hastebin.com",
+    "ghostbin.co",
+    # Code / developer paste sites
+    "gist.github.com",
+    "ideone.com",
+    "codepad.org",
+    "termbin.com",
+    "ix.io",
+    "sprunge.us",
+    "clbin.com",
+    "bpaste.net",
+    # Community / project paste sites
+    "paste.mozilla.org",
+    "paste.debian.net",
+    "paste.ubuntu.com",
+    "paste.centos.org",
+    "paste.opensuse.org",
+    "paste.kde.org",
+    "fpaste.org",
+    "paste.fedoraproject.org",
+    # Misc public paste sites
+    "justpaste.it",
+    "pastebin.pl",
+    "paste.ofcode.org",
+    "controlc.com",
+    "paste.laravel.io",
+    "privatebin.net",
+    "paste.rs",
 ]
 
+# ---------------------------------------------------------------------------
 # Academic / government repositories
+# ---------------------------------------------------------------------------
 ACADEMIC_SOURCES = [
     "arxiv.org",
     "semanticscholar.org",
@@ -44,6 +77,12 @@ ACADEMIC_SOURCES = [
     "scholar.google.com",
     "pubmed.ncbi.nlm.nih.gov",
     "ssrn.com",
+    "zenodo.org",
+    "figshare.com",
+    "osf.io",
+    "eric.ed.gov",
+    "hal.science",
+    "europepmc.org",
 ]
 
 GOVERNMENT_SOURCES = [
@@ -55,4 +94,38 @@ GOVERNMENT_SOURCES = [
     "foia.gov",
     "archives.gov",
     "eric.ed.gov",
+    "gao.gov",
+    "congress.gov",
+    "regulations.gov",
+    "ftc.gov",
+    "sec.gov/cgi-bin/srqsb",
+]
+
+# ---------------------------------------------------------------------------
+# Public mailing list archive hosts
+# ---------------------------------------------------------------------------
+MAILING_LIST_ARCHIVES = [
+    "mail-archive.com",
+    "marc.info",
+    "lists.debian.org",
+    "lists.ubuntu.com",
+    "lists.apache.org",
+    "lists.freedesktop.org",
+    "lkml.org",
+    "spinics.net",
+    "sourceware.org/ml",
+]
+
+# ---------------------------------------------------------------------------
+# Dead / vintage web hosting platforms (good Wayback targets)
+# ---------------------------------------------------------------------------
+VINTAGE_HOSTS = [
+    "angelfire.com",
+    "geocities.com",
+    "tripod.com",
+    "fortunecity.com",
+    "freewebs.com",
+    "brinkster.com",
+    "homestead.com",
+    "bizland.com",
 ]

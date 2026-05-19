@@ -1,4 +1,5 @@
-"""Specialized source tools: ArXiv, GitHub, Reddit, WHOIS, DNS, government portals."""
+"""Specialized source tools: ArXiv, GitHub, Reddit, WHOIS, DNS, government portals,
+Shodan, HackerNews, StackExchange, dataset repositories, vintage web."""
 
 import json
 import os
@@ -11,7 +12,7 @@ import requests
 from crewai.tools import BaseTool
 from duckduckgo_search import DDGS
 
-from config import GITHUB_TOKEN, REQUEST_HEADERS, REQUEST_TIMEOUT
+from config import GITHUB_TOKEN, REQUEST_HEADERS, REQUEST_TIMEOUT, SHODAN_API_KEY, STACK_EXCHANGE_KEY
 
 
 class ArXivSearchTool(BaseTool):
@@ -362,3 +363,284 @@ class SemanticScholarTool(BaseTool):
                 f"DOI: {p.get('externalIds', {}).get('DOI', 'N/A')}"
             )
         return "\n---\n".join(results)
+
+
+class ShodanSearchTool(BaseTool):
+    name: str = "shodan_search"
+    description: str = (
+        "Search Shodan for publicly exposed internet-connected devices, services, and hosts. "
+        "Returns IP addresses, open ports, banners, hostnames, and geographic data. "
+        "Useful for finding exposed servers, public APIs, misconfigured services, "
+        "and infrastructure related to an organization or technology. "
+        "Uses SHODAN_API_KEY if set; falls back to Shodan web dork via DuckDuckGo. "
+        "Input: JSON with 'query' (str) and optional 'max_results' (int). "
+        "Example queries: 'org:\"Target Corp\"', 'hostname:example.com', "
+        "'product:elasticsearch country:US', 'port:27017 mongodb'."
+    )
+
+    def _run(self, query: str) -> str:
+        try:
+            params = json.loads(query) if query.strip().startswith("{") else {"query": query}
+            q = params.get("query", query)
+            n = min(int(params.get("max_results", 20)), 100)
+        except (json.JSONDecodeError, ValueError):
+            q, n = query, 20
+
+        if SHODAN_API_KEY:
+            try:
+                resp = requests.get(
+                    "https://api.shodan.io/shodan/host/search",
+                    params={"key": SHODAN_API_KEY, "query": q, "minify": True},
+                    headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                matches = data.get("matches", [])
+                total = data.get("total", 0)
+                results = [f"Shodan API — {total} total matches for: {q}\n"]
+                for m in matches[:n]:
+                    hostnames = ", ".join(m.get("hostnames", []))
+                    results.append(
+                        f"IP: {m.get('ip_str')} | PORT: {m.get('port')} | "
+                        f"TRANSPORT: {m.get('transport', 'tcp')}\n"
+                        f"ORG: {m.get('org', 'N/A')} | ISP: {m.get('isp', 'N/A')}\n"
+                        f"COUNTRY: {m.get('location', {}).get('country_name', 'N/A')}\n"
+                        f"HOSTNAMES: {hostnames or 'N/A'}\n"
+                        f"PRODUCT: {m.get('product', 'N/A')} | VERSION: {m.get('version', 'N/A')}\n"
+                        f"BANNER: {str(m.get('data', ''))[:300]}\n"
+                        f"LAST SEEN: {m.get('timestamp', 'N/A')}"
+                    )
+                return "\n---\n".join(results)
+            except Exception as e:
+                return f"Shodan API error: {e}"
+
+        # Fallback: web dork
+        results = []
+        with DDGS() as ddgs:
+            for r in ddgs.text(f"site:shodan.io/host {q}", max_results=n):
+                results.append(
+                    f"SOURCE: Shodan.io (web)\n"
+                    f"TITLE: {r.get('title', '')}\n"
+                    f"URL: {r.get('href', '')}\n"
+                    f"SNIPPET: {r.get('body', '')[:300]}"
+                )
+        if not results:
+            with DDGS() as ddgs:
+                for r in ddgs.text(f"site:search.censys.io {q}", max_results=10):
+                    results.append(
+                        f"SOURCE: Censys.io (web)\n"
+                        f"TITLE: {r.get('title', '')}\n"
+                        f"URL: {r.get('href', '')}\n"
+                        f"SNIPPET: {r.get('body', '')[:300]}"
+                    )
+        return "\n---\n".join(results) if results else "No Shodan results. Set SHODAN_API_KEY for full access."
+
+
+class DatasetSearchTool(BaseTool):
+    name: str = "dataset_search"
+    description: str = (
+        "Search public dataset repositories for raw data files on any topic. "
+        "Covers Zenodo, Figshare, Harvard Dataverse, HuggingFace datasets. "
+        "Returns dataset titles, DOIs, file formats, and download links. "
+        "Input: JSON with 'query' (str) and optional 'source' "
+        "('zenodo'|'figshare'|'dataverse'|'huggingface'|'all')."
+    )
+
+    def _run(self, query: str) -> str:
+        try:
+            params = json.loads(query) if query.strip().startswith("{") else {"query": query}
+            q = params.get("query", query)
+            source = params.get("source", "all")
+        except (json.JSONDecodeError, ValueError):
+            q, source = query, "all"
+
+        results = []
+
+        if source in ("all", "zenodo"):
+            try:
+                resp = requests.get(
+                    "https://zenodo.org/api/records",
+                    params={"q": q, "size": 8, "sort": "bestmatch", "type": "dataset"},
+                    headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT,
+                )
+                if resp.status_code == 200:
+                    for hit in resp.json().get("hits", {}).get("hits", [])[:6]:
+                        meta = hit.get("metadata", {})
+                        files = hit.get("files", [])
+                        file_info = ", ".join(
+                            f"{f.get('key')} ({f.get('size', 0) // 1024}KB)" for f in files[:3]
+                        )
+                        results.append(
+                            f"SOURCE: Zenodo\n"
+                            f"TITLE: {meta.get('title', 'N/A')}\n"
+                            f"AUTHORS: {', '.join(c.get('name', '') for c in meta.get('creators', [])[:3])}\n"
+                            f"DATE: {meta.get('publication_date', 'N/A')}\n"
+                            f"FILES: {file_info or 'N/A'}\n"
+                            f"DOI: {hit.get('doi', 'N/A')}\n"
+                            f"URL: https://zenodo.org/record/{hit.get('id')}"
+                        )
+            except Exception:
+                pass
+
+        if source in ("all", "dataverse"):
+            try:
+                resp = requests.get(
+                    "https://dataverse.harvard.edu/api/search",
+                    params={"q": q, "type": "dataset", "per_page": 8},
+                    headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT,
+                )
+                if resp.status_code == 200:
+                    for item in resp.json().get("data", {}).get("items", [])[:6]:
+                        results.append(
+                            f"SOURCE: Harvard Dataverse\n"
+                            f"TITLE: {item.get('name', 'N/A')}\n"
+                            f"DESCRIPTION: {str(item.get('description', ''))[:300]}\n"
+                            f"PUBLISHED: {item.get('published_at', 'N/A')}\n"
+                            f"URL: {item.get('url', 'N/A')}"
+                        )
+            except Exception:
+                pass
+
+        if source in ("all", "figshare"):
+            try:
+                resp = requests.get(
+                    "https://api.figshare.com/v2/articles/search",
+                    json={"search_for": q, "item_type": 3, "page_size": 8},
+                    headers={**REQUEST_HEADERS, "Content-Type": "application/json"},
+                    timeout=REQUEST_TIMEOUT,
+                )
+                if resp.status_code == 200:
+                    for item in resp.json()[:6]:
+                        results.append(
+                            f"SOURCE: Figshare\n"
+                            f"TITLE: {item.get('title', 'N/A')}\n"
+                            f"DOI: {item.get('doi', 'N/A')}\n"
+                            f"PUBLISHED: {item.get('published_date', 'N/A')}\n"
+                            f"URL: {item.get('url_public_html', 'N/A')}"
+                        )
+            except Exception:
+                pass
+
+        if source in ("all", "huggingface"):
+            try:
+                resp = requests.get(
+                    "https://huggingface.co/api/datasets",
+                    params={"search": q, "limit": 8, "full": False},
+                    headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT,
+                )
+                if resp.status_code == 200:
+                    for ds in resp.json()[:6]:
+                        results.append(
+                            f"SOURCE: HuggingFace\n"
+                            f"DATASET: {ds.get('id', 'N/A')}\n"
+                            f"DOWNLOADS: {ds.get('downloads', 'N/A')}\n"
+                            f"TAGS: {', '.join(ds.get('tags', [])[:5])}\n"
+                            f"URL: https://huggingface.co/datasets/{ds.get('id')}"
+                        )
+            except Exception:
+                pass
+
+        if not results:
+            dork = f"({q}) (site:zenodo.org OR site:figshare.com OR site:dataverse.harvard.edu OR site:osf.io)"
+            with DDGS() as ddgs:
+                for r in ddgs.text(dork, max_results=10):
+                    results.append(
+                        f"SOURCE: Dataset repo (web)\n"
+                        f"TITLE: {r.get('title', '')}\n"
+                        f"URL: {r.get('href', '')}\n"
+                        f"SNIPPET: {r.get('body', '')[:300]}"
+                    )
+
+        return "\n---\n".join(results) if results else "No dataset results found."
+
+
+class VintageWebSearchTool(BaseTool):
+    name: str = "vintage_web_search"
+    description: str = (
+        "Search for content on defunct and vintage web platforms from the 1990s-2000s: "
+        "Geocities, Angelfire, Tripod, FortuneCity, FreeWebs, Homestead, and similar hosts "
+        "preserved in Wayback Machine and Common Crawl. Also searches early SourceForge "
+        "projects, LiveJournal, Xanga, Diaryland, and other early-web platforms. "
+        "Input: JSON with 'query' (str) and optional 'era' ('90s'|'00s'|'all')."
+    )
+
+    def _run(self, query: str) -> str:
+        try:
+            params = json.loads(query) if query.strip().startswith("{") else {"query": query}
+            q = params.get("query", query)
+            era = params.get("era", "all")
+        except (json.JSONDecodeError, ValueError):
+            q, era = query, "all"
+
+        results = []
+
+        # Wayback CDX for vintage hosting platforms
+        vintage_domains = [
+            "geocities.com", "angelfire.com", "tripod.com",
+            "fortunecity.com", "freewebs.com", "homestead.com",
+        ]
+        for domain in vintage_domains:
+            try:
+                date_filter = ""
+                if era == "90s":
+                    date_filter = "&from=19940101000000&to=19991231235959"
+                elif era == "00s":
+                    date_filter = "&from=20000101000000&to=20091231235959"
+
+                cdx_url = (
+                    f"https://web.archive.org/cdx/search/cdx"
+                    f"?url=*.{domain}/*&output=json&limit=4"
+                    f"&fl=timestamp,original,statuscode"
+                    f"&filter=statuscode:200&filter=mimetype:text/html{date_filter}"
+                )
+                resp = requests.get(cdx_url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+                if resp.status_code == 200:
+                    rows = resp.json()
+                    for row in rows[1:4]:
+                        ts, orig_url, status = row[0], row[1], row[2]
+                        results.append(
+                            f"PLATFORM: {domain} (archived)\n"
+                            f"ORIGINAL URL: {orig_url}\n"
+                            f"ARCHIVED: {ts[:8]}\n"
+                            f"WAYBACK: https://web.archive.org/web/{ts}/{orig_url}"
+                        )
+            except Exception:
+                pass
+            import time; time.sleep(0.2)
+
+        # Live mirrors of old Geocities content
+        vintage_dork = (
+            f'"{q}" (site:angelfire.com OR site:tripod.com OR '
+            f'site:geocities.ws OR site:oocities.org)'
+        )
+        with DDGS() as ddgs:
+            for r in ddgs.text(vintage_dork, max_results=8):
+                results.append(
+                    f"PLATFORM: Vintage web (live mirror)\n"
+                    f"TITLE: {r.get('title', '')}\n"
+                    f"URL: {r.get('href', '')}\n"
+                    f"SNIPPET: {r.get('body', '')[:300]}"
+                )
+
+        # SourceForge
+        with DDGS() as ddgs:
+            for r in ddgs.text(f"site:sourceforge.net {q}", max_results=6):
+                results.append(
+                    f"PLATFORM: SourceForge\n"
+                    f"TITLE: {r.get('title', '')}\n"
+                    f"URL: {r.get('href', '')}\n"
+                    f"SNIPPET: {r.get('body', '')[:300]}"
+                )
+
+        # Early blogosphere
+        blog_dork = f'"{q}" (site:livejournal.com OR site:xanga.com OR site:diaryland.com)'
+        with DDGS() as ddgs:
+            for r in ddgs.text(blog_dork, max_results=6):
+                results.append(
+                    f"PLATFORM: Early blogosphere\n"
+                    f"TITLE: {r.get('title', '')}\n"
+                    f"URL: {r.get('href', '')}\n"
+                    f"SNIPPET: {r.get('body', '')[:300]}"
+                )
+
+        return "\n---\n".join(results) if results else "No vintage web results found."

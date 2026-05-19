@@ -25,10 +25,13 @@ from tools.search_tools import (
 )
 from tools.specialized_tools import (
     ArXivSearchTool,
+    DatasetSearchTool,
     GitHubSearchTool,
     GovernmentDocsSearchTool,
     RedditSearchTool,
     SemanticScholarTool,
+    ShodanSearchTool,
+    VintageWebSearchTool,
     WHOISLookupTool,
 )
 
@@ -91,7 +94,17 @@ def create_infiltrator(llm: LLM) -> Agent:
             "  GovInfo, Federal Register, data.gov.\n"
             "  Dork .gov domains for PDFs, CSVs, and open directories.\n"
             "  FOIA reading rooms. Agency subdomains.\n\n"
-            "  PHASE 9 — STANDARD SWEEP (LAST)\n"
+            "  PHASE 9 — DATASET REPOSITORIES\n"
+            "  Zenodo, Harvard Dataverse, Figshare, HuggingFace datasets, OSF.\n"
+            "  Raw data files — CSVs, JSONs, SQL dumps — contain what articles summarize away.\n\n"
+            "  PHASE 10 — EXPOSED INFRASTRUCTURE\n"
+            "  Shodan and Censys for publicly exposed services related to the topic.\n"
+            "  Finds servers, APIs, and databases that weren't meant to be public but are.\n\n"
+            "  PHASE 11 — VINTAGE AND DEFUNCT WEB\n"
+            "  Geocities, Angelfire, Tripod, FortuneCity via Wayback Machine.\n"
+            "  SourceForge project pages. LiveJournal. Early blogosphere.\n"
+            "  The internet of 1996-2005 contained raw expertise that was never migrated forward.\n\n"
+            "  PHASE 12 — STANDARD SWEEP (LAST)\n"
             "  Only after all above phases are complete: run broad web and news search.\n"
             "  Use this to catch anything the structured phases missed.\n\n"
             "Rules:\n"
@@ -121,7 +134,13 @@ def create_infiltrator(llm: LLM) -> Agent:
             SemanticScholarTool(),
             # Phase 8: government
             GovernmentDocsSearchTool(),
-            # Phase 9: standard sweep — runs last
+            # Phase 9: datasets and raw data
+            DatasetSearchTool(),
+            # Phase 10: exposed infrastructure (Shodan/Censys)
+            ShodanSearchTool(),
+            # Phase 11: vintage and defunct web
+            VintageWebSearchTool(),
+            # Phase 12: standard sweep — runs last
             WebSearchTool(),
             NewsSearchTool(),
             ImageSearchTool(),
