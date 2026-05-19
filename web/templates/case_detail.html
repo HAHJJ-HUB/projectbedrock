@@ -1,188 +1,280 @@
 {% extends "base.html" %}
 {% block title %}{{ case.case_number }} — {{ case.name }}{% endblock %}
 
+{% block head %}
+<style>
+  .data-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    position: relative;
+  }
+  .panel-head {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-head .panel-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: #52527a;
+  }
+  .run-bar { height: 3px; border-radius: 1px; background: var(--border); overflow: hidden; }
+  .run-bar-fill { height: 100%; border-radius: 1px; }
+  .chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 2px;
+    background: rgba(255,255,255,0.04); color: #6b6b9a; border: 1px solid var(--border);
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 
-<!-- Header -->
-<div class="mb-6">
-  <a href="/" class="mono text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1 mb-4">
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    DASHBOARD
-  </a>
+<!-- Breadcrumb -->
+<div class="flex items-center gap-2 mb-5 mono text-xs text-zinc-700">
+  <a href="/" class="hover:text-zinc-400 transition-colors">DASHBOARD</a>
+  <span>/</span>
+  <span class="glow-amber">{{ case.case_number }}</span>
+  <span>/</span>
+  <span class="text-zinc-500">{{ case.name }}</span>
+</div>
 
-  <div class="flex items-start justify-between">
-    <div>
-      <div class="flex items-center gap-3 mb-2">
-        <span class="mono font-bold text-sm" style="color:#f59e0b">{{ case.case_number }}</span>
-        <span class="badge badge-{{ case.status }}">{{ case.status }}</span>
-        <span class="badge badge-{{ case.priority }}">{{ case.priority }}</span>
-        <span class="mono text-xs text-zinc-600 px-2 py-0.5 rounded-sm" style="background:#1e1e26">{{ case.subject_type }}</span>
-      </div>
-      <h1 class="text-2xl font-bold text-zinc-100">{{ case.name }}</h1>
-      {% if case.description %}
-      <p class="text-zinc-500 text-sm mt-1 max-w-2xl">{{ case.description }}</p>
-      {% endif %}
-      {% if case.tags %}
-      <div class="flex items-center gap-1 mt-2">
-        {% for tag in case.tags %}
-        <span class="mono text-xs px-2 py-0.5 rounded-sm" style="background:#1e1e26;color:#52525b">{{ tag }}</span>
-        {% endfor %}
-      </div>
-      {% endif %}
+<!-- Case header -->
+<div class="flex items-start justify-between mb-6">
+  <div>
+    <div class="flex items-center gap-2 mb-2">
+      <span class="mono font-bold text-sm glow-amber">{{ case.case_number }}</span>
+      <span class="badge badge-{{ case.status }}">{{ case.status }}</span>
+      <span class="badge badge-{{ case.priority }}">{{ case.priority }}</span>
+      <span class="chip">{{ case.subject_type }}</span>
     </div>
-
-    <div class="flex items-center gap-2">
-      <a href="/cases/{{ case.id }}/analyze" class="btn btn-ghost">Narrative Analysis</a>
-      <form method="post" action="/cases/{{ case.id }}/status" class="inline">
-        {% if case.status == 'active' %}
-        <input type="hidden" name="status" value="closed">
-        <button type="submit" class="btn btn-ghost">Close Case</button>
-        {% elif case.status == 'closed' %}
-        <input type="hidden" name="status" value="active">
-        <button type="submit" class="btn btn-ghost">Reopen</button>
-        {% endif %}
-      </form>
+    <h1 class="text-2xl font-bold text-zinc-100">{{ case.name }}</h1>
+    {% if case.description %}
+    <p class="text-zinc-600 text-sm mt-1 max-w-2xl">{{ case.description }}</p>
+    {% endif %}
+    {% if case.tags %}
+    <div class="flex items-center gap-1 mt-2">
+      {% for tag in case.tags %}
+      <span class="chip" style="font-size:8px">{{ tag }}</span>
+      {% endfor %}
     </div>
+    {% endif %}
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="/cases/{{ case.id }}/analyze" class="btn btn-ghost">Narrative Analysis</a>
+    <form method="post" action="/cases/{{ case.id }}/status" class="inline">
+      {% if case.status == 'active' %}
+      <input type="hidden" name="status" value="closed">
+      <button type="submit" class="btn btn-ghost">Close Case</button>
+      {% elif case.status == 'closed' %}
+      <input type="hidden" name="status" value="active">
+      <button type="submit" class="btn btn-ghost">Reopen</button>
+      {% endif %}
+    </form>
   </div>
 </div>
 
-<!-- Stats bar -->
+<!-- Stats row -->
 <div class="grid grid-cols-4 gap-3 mb-6">
-  {% for label, val, color in [
-    ("Notes", stats.notes, "#f59e0b"),
-    ("Research Runs", stats.runs, "#a78bfa"),
-    ("Sources Found", stats.sources, "#22c55e"),
-    ("Opened", case.created_at[:10], "#60a5fa")
+  {% for label, val, color, icon in [
+    ("Notes",         stats.notes,   "var(--c-phantom)", "⬡"),
+    ("Research Runs", stats.runs,    "var(--c-spectre)", "◈"),
+    ("Sources Found", stats.sources, "var(--c-cortex)",  "⬟"),
+    ("Opened",        case.created_at[:10], "var(--c-axiom)", "◉"),
   ] %}
-  <div class="card p-4">
-    <p class="label mb-1">{{ label }}</p>
-    <p class="mono font-bold text-lg" style="color:{{ color }}">{{ val }}</p>
+  <div class="data-panel p-4 flex items-center gap-3" style="border-left:2px solid {{ color }}30;">
+    <div class="mono text-2xl font-bold" style="color:{{ color }}; min-width:36px">{{ val }}</div>
+    <div>
+      <div class="label mb-0">{{ label }}</div>
+      <div class="mono text-xs mt-1" style="color:{{ color }}; opacity:0.45">{{ icon }}</div>
+    </div>
   </div>
   {% endfor %}
 </div>
 
 <!-- Main grid -->
-<div class="grid grid-cols-3 gap-5">
+<div class="grid grid-cols-3 gap-4">
 
-  <!-- Left: Timeline -->
-  <div class="col-span-2 space-y-5">
+  <!-- Left: timeline + memory -->
+  <div class="col-span-2 space-y-4">
 
     <!-- Add note -->
-    <div class="card p-5">
-      <p class="label mb-3">Add to Case File</p>
-      <form method="post" action="/cases/{{ case.id }}/notes" class="flex gap-2">
-        <input type="hidden" name="source" value="manual">
-        <textarea name="content" class="input flex-1" rows="2"
-                  placeholder="Add an observation, lead, or finding..." required></textarea>
-        <button type="submit" class="btn btn-primary self-end flex-shrink-0">Add</button>
-      </form>
+    <div class="data-panel">
+      <div class="panel-head">
+        <span class="panel-title">Add to Case File</span>
+        <span class="mono text-xs text-zinc-700">manual entry</span>
+      </div>
+      <div class="p-4">
+        <form method="post" action="/cases/{{ case.id }}/notes" class="flex gap-3">
+          <input type="hidden" name="source" value="manual">
+          <textarea name="content" class="input flex-1" rows="2"
+                    placeholder="Add an observation, lead, or finding…" required></textarea>
+          <button type="submit" class="btn btn-green self-end flex-shrink-0">Add</button>
+        </form>
+      </div>
     </div>
 
     <!-- Timeline -->
-    <div class="card p-5">
-      <p class="label mb-5">Case Timeline</p>
-
-      {% if not notes %}
-      <div class="text-center py-8">
-        <p class="mono text-xs text-zinc-600 tracking-wide">NO ENTRIES YET</p>
-        <p class="text-zinc-700 text-xs mt-1">Add notes or run research to begin building the case file.</p>
+    <div class="data-panel">
+      <div class="panel-head">
+        <span class="panel-title">Case Timeline</span>
+        <span class="mono text-xs text-zinc-700">{{ notes | length }} entries</span>
       </div>
-      {% else %}
-      <div class="relative space-y-4 pl-8">
-        <div class="timeline-line"></div>
-        {% for note in notes | reverse %}
-        <div class="flex items-start gap-3">
-          <div class="timeline-dot flex-shrink-0 mt-1
-            {% if note.source == 'manual' %}dot-manual
-            {% elif note.source == 'system' %}dot-system
-            {% else %}dot-agent{% endif %}
-          " style="position:absolute;left:11px"></div>
-          <div class="flex-1 ml-3">
-            <div class="flex items-center gap-2 mb-1">
-              <span class="mono text-xs font-bold
-                {% if note.source == 'manual' %}text-amber-500
-                {% elif note.source == 'system' %}text-violet-400
-                {% else %}text-green-400{% endif %}">
-                {{ note.source | upper }}{% if note.agent %} / {{ note.agent | upper }}{% endif %}
-              </span>
-              <span class="mono text-xs text-zinc-600">{{ note.created_at[:16] | replace('T', ' ') }}</span>
-            </div>
-            <p class="text-zinc-300 text-sm leading-relaxed">{{ note.content }}</p>
-          </div>
+      <div class="p-5">
+        {% if not notes %}
+        <div class="text-center py-8">
+          <div class="mono text-zinc-700 text-xs tracking-widest mb-2">NO ENTRIES YET</div>
+          <p class="text-zinc-700 text-xs">Add notes or run intelligence gathering.</p>
         </div>
-        {% endfor %}
+        {% else %}
+        <div class="relative space-y-4 pl-8">
+          <div class="timeline-line"></div>
+          {% for note in notes | reverse %}
+          <div class="flex items-start gap-3">
+            <div class="timeline-dot flex-shrink-0 mt-1
+              {% if note.source == 'manual' %}dot-manual
+              {% elif note.source == 'system' %}dot-system
+              {% else %}dot-agent{% endif %}
+            " style="position:absolute;left:11px"></div>
+            <div class="flex-1 ml-3">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="mono text-xs font-bold
+                  {% if note.source == 'manual' %}glow-amber
+                  {% elif note.source == 'system' %}glow-violet
+                  {% else %}glow-teal{% endif %}">
+                  {{ note.source | upper }}{% if note.agent %} / {{ note.agent | upper }}{% endif %}
+                </span>
+                <span class="mono text-xs text-zinc-700">
+                  {{ note.created_at[:16] | replace('T', ' ') }}
+                </span>
+              </div>
+              <p class="text-zinc-400 text-sm leading-relaxed">{{ note.content }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
     </div>
 
     <!-- Memory findings -->
     {% if findings %}
-    <div class="card p-5">
-      <p class="label mb-4">Extracted Findings from Memory</p>
-      <div class="space-y-3">
+    <div class="data-panel">
+      <div class="panel-head">
+        <span class="panel-title">Memory Corpus</span>
+        <span class="mono text-xs" style="color:var(--c-cortex)">{{ findings | length }} vectors</span>
+      </div>
+      <div class="p-4 space-y-3">
         {% for f in findings[:10] %}
-        <div class="border-l-2 pl-3" style="border-color:#1e1e26">
-          <p class="mono text-xs text-zinc-600 mb-1 truncate">{{ f.source_url }}</p>
-          <p class="text-zinc-400 text-xs leading-relaxed">{{ f.content[:400] }}{% if f.content | length > 400 %}…{% endif %}</p>
+        <div style="border-left:1px solid var(--border-2); padding-left:12px">
+          <div class="mono text-xs text-zinc-700 mb-1 truncate">{{ f.source_url }}</div>
+          <p class="text-zinc-500 text-xs leading-relaxed">
+            {{ f.content[:380] }}{% if f.content | length > 380 %}…{% endif %}
+          </p>
         </div>
         {% endfor %}
         {% if findings | length > 10 %}
-        <p class="mono text-xs text-zinc-700 mt-2">+ {{ findings | length - 10 }} more findings in memory</p>
+        <div class="mono text-xs text-zinc-700 text-center pt-2">
+          + {{ findings | length - 10 }} more vectors in memory
+        </div>
         {% endif %}
       </div>
     </div>
     {% endif %}
 
-  </div>
+  </div><!-- /left -->
 
-  <!-- Right: Research runs & actions -->
+  <!-- Right: deploy + history + metadata -->
   <div class="space-y-4">
 
-    <!-- Run research -->
-    <div class="card p-5">
-      <p class="label mb-3">Run Intelligence Gathering</p>
-      <form method="post" action="/cases/{{ case.id }}/research" id="run-form">
-        <div class="mb-3">
-          <label class="label">Scope / Focus <span class="text-zinc-700">(optional)</span></label>
-          <input type="text" name="scope" class="input" placeholder="e.g. focus on 1970s documents">
+    <!-- Deploy panel -->
+    <div class="data-panel card-phantom">
+      <div class="panel-head">
+        <span class="panel-title">Deploy Intelligence Crew</span>
+        <span class="mono text-xs" style="color:var(--c-phantom)">4 agents</span>
+      </div>
+      <div class="p-4">
+        <!-- Agent lineup -->
+        <div class="space-y-2 mb-4">
+          {% for callsign, name, color in [
+            ("PHANTOM-1", "Infiltrator", "var(--c-phantom)"),
+            ("SPECTRE",   "Ghost",       "var(--c-spectre)"),
+            ("CORTEX",    "Nexus",       "var(--c-cortex)"),
+            ("AXIOM",     "Oracle",      "var(--c-axiom)"),
+          ] %}
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div style="width:5px;height:5px;border-radius:50%;background:{{ color }};box-shadow:0 0 4px {{ color }}"></div>
+              <span class="mono text-xs font-bold" style="color:{{ color }}">{{ callsign }}</span>
+              <span class="mono text-xs text-zinc-700">{{ name }}</span>
+            </div>
+            <span class="badge badge-queued" style="font-size:8px">STANDBY</span>
+          </div>
+          {% endfor %}
         </div>
-        <button type="submit" class="btn btn-primary w-full justify-center" id="run-btn">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M6 4v2l1.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-          </svg>
-          Initiate Research
-        </button>
-      </form>
-      <p class="mono text-xs text-zinc-700 mt-3 leading-relaxed">
-        Deploys all four agents against this subject. Results accumulate in memory and appear in the timeline.
-      </p>
+
+        <form method="post" action="/cases/{{ case.id }}/research" id="run-form">
+          <div class="mb-3">
+            <label class="label">Scope <span class="text-zinc-700">(optional)</span></label>
+            <input type="text" name="scope" class="input" placeholder="e.g. focus on 1990–2005">
+          </div>
+          <button type="submit" class="btn btn-green w-full justify-center" id="run-btn">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M5 3v2l1.2 1.2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+            </svg>
+            Initiate Breach
+          </button>
+        </form>
+        <p class="mono text-zinc-700 mt-3 leading-relaxed" style="font-size:9px">
+          Deploys PHANTOM-1 → SPECTRE → CORTEX → AXIOM in sequence.
+          Results accumulate in memory and surface in the timeline.
+        </p>
+      </div>
     </div>
 
-    <!-- Research run history -->
+    <!-- Run history -->
     {% if runs %}
-    <div class="card p-5">
-      <p class="label mb-3">Research Runs</p>
-      <div class="space-y-2" id="runs-list">
+    <div class="data-panel">
+      <div class="panel-head">
+        <span class="panel-title">Research Runs</span>
+        <span class="mono text-xs text-zinc-700">{{ runs | length }}</span>
+      </div>
+      <div class="p-4 space-y-3" id="runs-list">
         {% for run in runs %}
-        <div class="flex items-start justify-between gap-2 py-2 border-b border-[#1e1e26] last:border-0"
-             data-run-id="{{ run.id }}" data-run-status="{{ run.status }}">
-          <div>
-            <div class="flex items-center gap-2 mb-0.5">
-              <span class="badge badge-{{ run.status }}">{{ run.status }}</span>
-              <span class="mono text-xs text-zinc-700">#{{ run.id }}</span>
+        <div data-run-id="{{ run.id }}" data-run-status="{{ run.status }}">
+          <div class="flex items-start justify-between gap-2 pb-2"
+               style="border-bottom:1px solid var(--border)">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="badge badge-{{ run.status }}">{{ run.status }}</span>
+                <span class="mono text-xs text-zinc-700">#{{ run.id }}</span>
+                {% if run.status == 'running' %}
+                <span class="running-indicator"><span class="running-dot"></span>LIVE</span>
+                {% endif %}
+              </div>
+              <div class="mono text-xs text-zinc-700">{{ run.started_at[:16] | replace('T', ' ') }}</div>
+              {% if run.scope %}
+              <div class="mono text-xs text-zinc-600 mt-0.5 italic">{{ run.scope }}</div>
+              {% endif %}
             </div>
-            <p class="mono text-xs text-zinc-600">{{ run.started_at[:16] | replace('T', ' ') }}</p>
-            {% if run.scope %}
-            <p class="text-zinc-600 text-xs mt-0.5 italic">{{ run.scope }}</p>
-            {% endif %}
+            <div class="text-right">
+              {% if run.sources_found %}
+              <div class="mono text-xs" style="color:var(--c-cortex)">{{ run.sources_found }} vectors</div>
+              {% endif %}
+              {% if run.error %}<div class="mono text-xs" style="color:var(--c-danger)">ERROR</div>{% endif %}
+            </div>
           </div>
-          <div class="text-right">
-            {% if run.sources_found %}
-            <p class="mono text-xs text-zinc-400">{{ run.sources_found }} sources</p>
-            {% endif %}
-            {% if run.error %}
-            <p class="text-red-500 text-xs">Failed</p>
+          <div class="run-bar mt-1">
+            {% if run.status == 'running' %}
+            <div class="run-bar-fill scan-bar" style="width:100%"></div>
+            {% elif run.status == 'complete' %}
+            <div class="run-bar-fill" style="width:100%; background:var(--c-axiom)"></div>
+            {% elif run.status == 'failed' %}
+            <div class="run-bar-fill" style="width:30%; background:var(--c-danger)"></div>
             {% endif %}
           </div>
         </div>
@@ -191,54 +283,50 @@
     </div>
     {% endif %}
 
-    <!-- Case metadata -->
-    <div class="card p-5">
-      <p class="label mb-3">Case Metadata</p>
-      <div class="space-y-2">
-        {% for key, val in [
-          ("Case No.", case.case_number),
-          ("Opened", case.created_at[:10]),
-          ("Updated", case.updated_at[:10]),
-          ("Status", case.status),
-          ("Priority", case.priority),
+    <!-- Metadata -->
+    <div class="data-panel">
+      <div class="panel-head">
+        <span class="panel-title">Case Metadata</span>
+      </div>
+      <div class="p-4">
+        {% for key, val, color in [
+          ("Case No.", case.case_number,    "var(--c-phantom)"),
+          ("Opened",   case.created_at[:10],"var(--c-spectre)"),
+          ("Updated",  case.updated_at[:10],"var(--c-cortex)"),
+          ("Status",   case.status,         "var(--c-active)"),
+          ("Priority", case.priority,       "var(--c-warn)"),
         ] %}
-        <div class="flex justify-between">
-          <span class="mono text-xs text-zinc-600">{{ key }}</span>
-          <span class="mono text-xs text-zinc-400">{{ val }}</span>
+        <div class="flex items-center justify-between py-2"
+             style="border-bottom:1px solid var(--border)">
+          <span class="mono text-xs text-zinc-700">{{ key }}</span>
+          <span class="mono text-xs font-bold" style="color:{{ color }}">{{ val }}</span>
         </div>
         {% endfor %}
       </div>
     </div>
 
-  </div>
+  </div><!-- /right -->
 </div>
 
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Poll for running research status
 function pollRuns() {
-  const runEls = document.querySelectorAll('[data-run-status="running"]');
-  runEls.forEach(el => {
-    const runId = el.dataset.runId;
-    fetch(`/cases/{{ case.id }}/runs/${runId}/status`)
+  const running = document.querySelectorAll('[data-run-status="running"]');
+  running.forEach(el => {
+    fetch(`/cases/{{ case.id }}/runs/${el.dataset.runId}/status`)
       .then(r => r.json())
-      .then(data => {
-        if (data.status !== 'running') {
-          window.location.reload();
-        }
-      });
+      .then(d => { if (d.status !== 'running') window.location.reload(); })
+      .catch(() => {});
   });
-  if (runEls.length > 0) setTimeout(pollRuns, 4000);
+  if (running.length > 0) setTimeout(pollRuns, 3500);
 }
-
 pollRuns();
 
-// Disable run button on submit
 document.getElementById('run-form')?.addEventListener('submit', () => {
   const btn = document.getElementById('run-btn');
-  btn.textContent = 'Dispatching…';
+  btn.innerHTML = '<span class="running-dot" style="display:inline-block"></span> Dispatching…';
   btn.disabled = true;
   btn.style.opacity = '0.6';
 });

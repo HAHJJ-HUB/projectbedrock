@@ -1,98 +1,172 @@
 {% extends "base.html" %}
+{% block title %}BEDROCK — DASHBOARD{% endblock %}
 
-{% block title %}CASE FILES — DASHBOARD{% endblock %}
+{% block head %}
+<style>
+  /* Priority color left borders on case cards */
+  .priority-critical { border-left: 2px solid #ef4444; }
+  .priority-high     { border-left: 2px solid #f59e0b; }
+  .priority-medium   { border-left: 2px solid #60a5fa; }
+  .priority-low      { border-left: 2px solid #3f3f6a; }
+
+  /* Subject type color chips */
+  .chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 2px;
+    background: rgba(255,255,255,0.04);
+    color: #6b6b9a;
+    border: 1px solid var(--border);
+  }
+
+  /* Metric card hover glow by color */
+  .metric-green:hover { box-shadow: 0 0 20px rgba(0,255,65,0.08); }
+  .metric-blue:hover  { box-shadow: 0 0 20px rgba(0,170,255,0.08); }
+  .metric-violet:hover{ box-shadow: 0 0 20px rgba(153,102,255,0.08); }
+  .metric-teal:hover  { box-shadow: 0 0 20px rgba(0,221,170,0.08); }
+</style>
+{% endblock %}
 
 {% block content %}
 
-<!-- Header -->
-<div class="flex items-start justify-between mb-8">
+<!-- ── Dashboard header ───────────────────────────────────────────────────── -->
+<div class="flex items-start justify-between mb-7">
   <div>
     <div class="flex items-center gap-3 mb-1">
-      <span class="mono text-xs text-zinc-600 tracking-widest">INTELLIGENCE MANAGEMENT SYSTEM</span>
+      <span class="mono text-zinc-700 tracking-widest" style="font-size:9px">INTELLIGENCE MANAGEMENT SYSTEM</span>
       <span class="classified-stamp">UNCLASSIFIED</span>
     </div>
     <h1 class="text-2xl font-bold text-zinc-100 tracking-tight">Case File Dashboard</h1>
-    <p class="text-zinc-500 text-sm mt-1">{{ counts.total }} total cases · {{ counts.active }} active</p>
+    <p class="text-zinc-600 text-xs mono mt-1">
+      {{ counts.total }} total &nbsp;·&nbsp; {{ counts.active }} active &nbsp;·&nbsp;
+      {{ counts.closed }} closed
+    </p>
   </div>
-  <a href="/cases/new" class="btn btn-primary">
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  <a href="/cases/new" class="btn btn-green">
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
     </svg>
-    Open New Case
+    Open Case
   </a>
 </div>
 
-<!-- Status filter tabs -->
-<div class="flex items-center gap-1 mb-6 border-b border-[#1e1e26] pb-0">
-  {% for label, val, count in [("All", "", counts.total), ("Active", "active", counts.active), ("Closed", "closed", counts.closed), ("Archived", "archived", counts.archived)] %}
+<!-- ── System metrics bar ─────────────────────────────────────────────────── -->
+<div class="grid grid-cols-4 gap-3 mb-7">
+  {% for label, val, color, cls, icon in [
+    ("Total Cases",   counts.total,    "var(--c-phantom)", "metric-green",  "⬡"),
+    ("Active Cases",  counts.active,   "var(--c-spectre)", "metric-blue",   "◈"),
+    ("Closed",        counts.closed,   "var(--c-cortex)",  "metric-violet", "⬟"),
+    ("Archived",      counts.archived, "var(--c-axiom)",   "metric-teal",   "◉"),
+  ] %}
+  <div class="card {{ cls }} p-4 relative bracket-tl bracket-br transition-all" style="border-left:2px solid {{ color }}20;">
+    <div class="flex items-center justify-between mb-2">
+      <span class="label mb-0">{{ label }}</span>
+      <span class="mono text-sm" style="color:{{ color }}; opacity:0.5">{{ icon }}</span>
+    </div>
+    <div class="mono font-bold text-2xl" style="color:{{ color }}">{{ val }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ── Agent status panels ────────────────────────────────────────────────── -->
+<div class="grid grid-cols-4 gap-3 mb-7">
+  {% for name, callsign, role, color, cls, desc in [
+    ("PHANTOM-1", "Infiltrator", "Deep Penetration", "var(--c-phantom)", "card-phantom",
+     "Dorks · Paste sweeps · Archive excavation · Forum archaeology"),
+    ("SPECTRE",   "Ghost",       "Extraction Ops",   "var(--c-spectre)", "card-spectre",
+     "Page extraction · Wayback fetch · PDF parse · Feed consumption"),
+    ("CORTEX",    "Nexus",       "Pattern Analysis",  "var(--c-cortex)",  "card-cortex",
+     "Narrative forensics · Entity mapping · Contradiction detection"),
+    ("AXIOM",     "Oracle",      "Final Reporting",   "var(--c-axiom)",   "card-axiom",
+     "Intelligence synthesis · Confidence assessment · Cited reports"),
+  ] %}
+  <div class="card {{ cls }} p-4 relative">
+    <div class="flex items-center justify-between mb-2">
+      <span class="mono font-bold text-sm" style="color:{{ color }}">{{ name }}</span>
+      <div class="agent-dot agent-dot-{{ name.lower().replace('-1','') | replace('phantom-1','phantom') }}"
+           style="width:6px;height:6px"></div>
+    </div>
+    <div class="mono text-zinc-500 text-xs mb-1">{{ callsign }} // {{ role }}</div>
+    <div class="text-zinc-700 text-xs leading-relaxed" style="font-size:10px">{{ desc }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ── Filter tabs ────────────────────────────────────────────────────────── -->
+<div class="flex items-center gap-0 mb-5" style="border-bottom:1px solid var(--border)">
+  {% for label, val, count in [
+    ("All Cases", "", counts.total),
+    ("Active",    "active",   counts.active),
+    ("Closed",    "closed",   counts.closed),
+    ("Archived",  "archived", counts.archived),
+  ] %}
   <a href="/?status={{ val }}"
-     class="px-4 py-2 text-xs mono tracking-wide border-b-2 transition-colors
-            {% if active_filter == val %}border-amber-DEFAULT text-amber-DEFAULT{% else %}border-transparent text-zinc-500 hover:text-zinc-300{% endif %}"
-     style="{% if active_filter == val %}border-color:#f59e0b;color:#f59e0b{% endif %}">
+     class="px-5 py-2 mono text-xs tracking-wide border-b-2 transition-colors -mb-px"
+     style="{% if active_filter == val %}
+              border-color:var(--c-spectre); color:var(--c-spectre);
+            {% else %}
+              border-color:transparent; color:#52527a;
+            {% endif %}">
     {{ label }}
-    <span class="ml-1 text-zinc-600">({{ count }})</span>
+    <span class="ml-1" style="color:#3f3f5a">({{ count }})</span>
   </a>
   {% endfor %}
 </div>
 
 {% if not cases %}
 <!-- Empty state -->
-<div class="card p-16 text-center">
-  <div class="w-12 h-12 border border-[#1e1e26] rounded-sm flex items-center justify-center mx-auto mb-4">
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="text-zinc-600">
-      <rect x="3" y="2" width="14" height="16" rx="1" stroke="currentColor" stroke-width="1.5"/>
-      <path d="M7 7h6M7 10h6M7 13h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    </svg>
-  </div>
-  <p class="mono text-zinc-600 text-sm tracking-wide">NO CASES ON FILE</p>
-  <p class="text-zinc-700 text-xs mt-2">Open a new case to begin intelligence gathering</p>
-  <a href="/cases/new" class="btn btn-primary mt-6 inline-flex">Open First Case</a>
+<div class="card p-16 text-center" style="border-style:dashed">
+  <div class="mono text-zinc-700 text-xs tracking-widest mb-3">NO CASES ON FILE</div>
+  <p class="text-zinc-600 text-sm mb-6">Open a case to begin intelligence gathering</p>
+  <a href="/cases/new" class="btn btn-green">Initiate First Case</a>
 </div>
+
 {% else %}
 
-<!-- Case grid -->
-<div class="grid grid-cols-1 gap-3">
+<!-- ── Case list ──────────────────────────────────────────────────────────── -->
+<div class="space-y-2">
   {% for case in cases %}
-  <a href="/cases/{{ case.id }}" class="card card-glow p-5 flex items-start justify-between group block">
-    <div class="flex items-start gap-4 flex-1 min-w-0">
+  <a href="/cases/{{ case.id }}"
+     class="card card-glow priority-{{ case.priority }} flex items-start justify-between p-4 group block relative transition-all">
 
+    <!-- Hex corner -->
+    <div class="hex-corner"></div>
+
+    <div class="flex items-start gap-4 flex-1 min-w-0">
       <!-- Case number -->
-      <div class="flex-shrink-0 pt-0.5">
-        <span class="mono text-xs font-bold" style="color:#f59e0b">{{ case.case_number }}</span>
+      <div class="flex-shrink-0 w-24">
+        <span class="mono font-bold text-xs glow-amber">{{ case.case_number }}</span>
       </div>
 
-      <!-- Main content -->
+      <!-- Main -->
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 mb-1">
-          <h2 class="font-semibold text-zinc-100 text-sm truncate group-hover:text-white">
+          <h2 class="font-semibold text-zinc-200 text-sm truncate group-hover:text-white transition-colors">
             {{ case.name }}
           </h2>
-          <span class="badge badge-{{ case.subject_type }} flex-shrink-0" style="background:rgba(100,100,120,0.1);color:#71717a;border-color:#1e1e26">
-            {{ case.subject_type }}
-          </span>
+          <span class="chip flex-shrink-0">{{ case.subject_type }}</span>
         </div>
         {% if case.description %}
-        <p class="text-zinc-500 text-xs truncate max-w-xl">{{ case.description }}</p>
+        <p class="text-zinc-600 text-xs truncate max-w-xl">{{ case.description }}</p>
         {% endif %}
         {% if case.tags %}
-        <div class="flex items-center gap-1 mt-2">
+        <div class="flex items-center gap-1 mt-1.5">
           {% for tag in case.tags %}
-          <span class="mono text-xs px-2 py-0.5 rounded-sm" style="background:#1e1e26;color:#52525b">{{ tag }}</span>
+          <span class="chip" style="font-size:8px">{{ tag }}</span>
           {% endfor %}
         </div>
         {% endif %}
       </div>
     </div>
 
-    <!-- Meta -->
-    <div class="flex items-center gap-4 flex-shrink-0 ml-4">
+    <!-- Meta right -->
+    <div class="flex items-center gap-3 flex-shrink-0 ml-4">
       <span class="badge badge-{{ case.priority }}">{{ case.priority }}</span>
       <span class="badge badge-{{ case.status }}">{{ case.status }}</span>
-      <div class="text-right">
-        <p class="mono text-xs text-zinc-600">{{ case.updated_at[:10] }}</p>
-      </div>
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" class="text-zinc-700 group-hover:text-zinc-500 transition-colors flex-shrink-0">
-        <path d="M5 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <span class="mono text-xs text-zinc-700">{{ case.updated_at[:10] }}</span>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="text-zinc-700 group-hover:text-zinc-400 transition-colors">
+        <path d="M4.5 2l4 4.5-4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
   </a>

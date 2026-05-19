@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}CASE FILES{% endblock %}</title>
+  <title>{% block title %}BEDROCK{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -11,10 +11,9 @@
       theme: {
         extend: {
           colors: {
-            surface:  '#0c0c0f',
-            card:     '#111116',
-            border:   '#1e1e26',
-            amber:    { DEFAULT: '#f59e0b', dim: '#78350f', glow: '#fbbf24' },
+            surface: '#080810',
+            card:    '#0d0d18',
+            border:  '#1a1a2e',
           },
           fontFamily: {
             mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'],
@@ -25,152 +24,213 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
-    body { background-color: #0c0c0f; color: #e4e4e7; font-family: 'Inter', sans-serif; }
+    :root {
+      --bg:        #080810;
+      --surface:   #0d0d18;
+      --card:      #0f0f1c;
+      --border:    #1a1a2e;
+      --border-2:  #252540;
+
+      /* Agent accent colors */
+      --c-phantom: #00ff41;   /* Infiltrator — matrix green */
+      --c-spectre: #00aaff;   /* Ghost       — electric blue */
+      --c-cortex:  #9966ff;   /* Nexus       — violet */
+      --c-axiom:   #00ddaa;   /* Oracle      — teal */
+
+      /* Status colors */
+      --c-active:  #22c55e;
+      --c-warn:    #f59e0b;
+      --c-danger:  #ef4444;
+      --c-info:    #60a5fa;
+      --c-muted:   #3f3f6a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: #c4c4d4;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
     .mono { font-family: 'JetBrains Mono', monospace; }
 
-    /* Scanline overlay */
+    /* ── Scanline + grid overlay ── */
     body::before {
       content: '';
-      position: fixed; inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0,0,0,0.03) 2px,
-        rgba(0,0,0,0.03) 4px
-      );
-      pointer-events: none;
-      z-index: 9999;
+      position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent 0px, transparent 3px,
+          rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px
+        ),
+        radial-gradient(ellipse at 20% 50%, rgba(0,170,255,0.03) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(153,102,255,0.03) 0%, transparent 60%);
     }
 
+    /* ── Cards ── */
     .card {
-      background: #111116;
-      border: 1px solid #1e1e26;
-      border-radius: 4px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      position: relative;
     }
+
+    /* Accent top-edge glow on cards */
+    .card-phantom { border-top: 2px solid rgba(0,255,65,0.5); }
+    .card-spectre { border-top: 2px solid rgba(0,170,255,0.5); }
+    .card-cortex  { border-top: 2px solid rgba(153,102,255,0.5); }
+    .card-axiom   { border-top: 2px solid rgba(0,221,170,0.5); }
+    .card-warn    { border-top: 2px solid rgba(245,158,11,0.5); }
+    .card-active  { border-top: 2px solid rgba(34,197,94,0.5); }
 
     .card-glow:hover {
-      border-color: rgba(245, 158, 11, 0.3);
-      box-shadow: 0 0 20px rgba(245, 158, 11, 0.05);
+      border-color: var(--border-2);
+      box-shadow: 0 0 24px rgba(0,170,255,0.06), 0 0 8px rgba(153,102,255,0.04);
       transition: all 0.2s ease;
     }
 
-    .amber-text { color: #f59e0b; }
-    .amber-dim  { color: #92400e; }
+    /* ── Hex corner decoration ── */
+    .hex-corner::before {
+      content: '';
+      position: absolute;
+      top: -1px; right: -1px;
+      width: 12px; height: 12px;
+      background: var(--border-2);
+      clip-path: polygon(100% 0, 100% 100%, 0 100%);
+    }
 
+    /* ── Badges ── */
     .badge {
       display: inline-flex; align-items: center;
-      padding: 1px 8px;
+      padding: 1px 7px;
       border-radius: 2px;
-      font-size: 10px;
+      font-size: 9px;
       font-family: 'JetBrains Mono', monospace;
       font-weight: 700;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
     }
 
-    .badge-active   { background: rgba(34,197,94,0.1);  color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
-    .badge-closed   { background: rgba(113,113,122,0.1); color: #71717a; border: 1px solid rgba(113,113,122,0.2); }
-    .badge-archived { background: rgba(59,130,246,0.1);  color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+    .badge-active   { background: rgba(34,197,94,0.1);   color: #22c55e; border: 1px solid rgba(34,197,94,0.25); }
+    .badge-closed   { background: rgba(63,63,106,0.15);  color: #6b6b9a; border: 1px solid rgba(63,63,106,0.3); }
+    .badge-archived { background: rgba(96,165,250,0.1);  color: #60a5fa; border: 1px solid rgba(96,165,250,0.2); }
     .badge-running  { background: rgba(245,158,11,0.1);  color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
     .badge-failed   { background: rgba(239,68,68,0.1);   color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
-    .badge-complete { background: rgba(34,197,94,0.1);   color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
-    .badge-queued   { background: rgba(139,92,246,0.1);  color: #a78bfa; border: 1px solid rgba(139,92,246,0.2); }
+    .badge-complete { background: rgba(0,221,170,0.1);   color: #00ddaa; border: 1px solid rgba(0,221,170,0.2); }
+    .badge-queued   { background: rgba(153,102,255,0.1); color: #9966ff; border: 1px solid rgba(153,102,255,0.2); }
 
-    .badge-critical { background: rgba(239,68,68,0.1);   color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
-    .badge-high     { background: rgba(249,115,22,0.1);  color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
-    .badge-medium   { background: rgba(234,179,8,0.1);   color: #eab308; border: 1px solid rgba(234,179,8,0.3); }
-    .badge-low      { background: rgba(113,113,122,0.1); color: #71717a; border: 1px solid rgba(113,113,122,0.2); }
+    .badge-critical { background: rgba(239,68,68,0.12);  color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .badge-high     { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+    .badge-medium   { background: rgba(96,165,250,0.1);  color: #60a5fa; border: 1px solid rgba(96,165,250,0.2); }
+    .badge-low      { background: rgba(63,63,106,0.12);  color: #6b6b9a; border: 1px solid rgba(63,63,106,0.3); }
 
+    /* ── Buttons ── */
     .btn {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 6px 14px;
-      border-radius: 3px;
-      font-size: 12px;
+      border-radius: 2px;
+      font-size: 11px;
       font-family: 'JetBrains Mono', monospace;
-      font-weight: 500;
-      letter-spacing: 0.05em;
+      font-weight: 600;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       cursor: pointer;
       transition: all 0.15s;
       border: 1px solid transparent;
+      text-decoration: none;
     }
 
     .btn-primary {
-      background: rgba(245,158,11,0.15);
-      color: #f59e0b;
-      border-color: rgba(245,158,11,0.3);
+      background: rgba(0,170,255,0.1);
+      color: #00aaff;
+      border-color: rgba(0,170,255,0.3);
     }
     .btn-primary:hover {
-      background: rgba(245,158,11,0.25);
-      border-color: rgba(245,158,11,0.5);
-      box-shadow: 0 0 12px rgba(245,158,11,0.15);
+      background: rgba(0,170,255,0.2);
+      border-color: rgba(0,170,255,0.6);
+      box-shadow: 0 0 14px rgba(0,170,255,0.2);
+    }
+
+    .btn-green {
+      background: rgba(0,255,65,0.08);
+      color: #00ff41;
+      border-color: rgba(0,255,65,0.25);
+    }
+    .btn-green:hover {
+      background: rgba(0,255,65,0.16);
+      border-color: rgba(0,255,65,0.5);
+      box-shadow: 0 0 14px rgba(0,255,65,0.15);
     }
 
     .btn-ghost {
-      background: rgba(255,255,255,0.03);
-      color: #71717a;
-      border-color: #1e1e26;
+      background: rgba(255,255,255,0.02);
+      color: #6b6b9a;
+      border-color: var(--border);
     }
-    .btn-ghost:hover { background: rgba(255,255,255,0.07); color: #a1a1aa; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.05); color: #a0a0c0; border-color: var(--border-2); }
 
     .btn-danger {
-      background: rgba(239,68,68,0.1);
+      background: rgba(239,68,68,0.08);
       color: #ef4444;
       border-color: rgba(239,68,68,0.2);
     }
-    .btn-danger:hover { background: rgba(239,68,68,0.2); }
+    .btn-danger:hover { background: rgba(239,68,68,0.16); border-color: rgba(239,68,68,0.4); }
 
+    /* ── Inputs ── */
     .input {
-      background: #0c0c0f;
-      border: 1px solid #1e1e26;
-      border-radius: 3px;
-      color: #e4e4e7;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: #e0e0f0;
       padding: 8px 12px;
       font-size: 13px;
       width: 100%;
       font-family: 'Inter', sans-serif;
-      transition: border-color 0.15s;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .input:focus { outline: none; border-color: rgba(245,158,11,0.5); }
-    .input::placeholder { color: #3f3f46; }
+    .input:focus {
+      outline: none;
+      border-color: rgba(0,170,255,0.4);
+      box-shadow: 0 0 0 2px rgba(0,170,255,0.08);
+    }
+    .input::placeholder { color: #2a2a45; }
 
     .select {
-      background: #0c0c0f;
-      border: 1px solid #1e1e26;
-      border-radius: 3px;
-      color: #e4e4e7;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: #e0e0f0;
       padding: 8px 12px;
-      font-size: 13px;
+      font-size: 12px;
       width: 100%;
       font-family: 'JetBrains Mono', monospace;
       cursor: pointer;
     }
-    .select:focus { outline: none; border-color: rgba(245,158,11,0.5); }
+    .select:focus { outline: none; border-color: rgba(0,170,255,0.4); }
 
     textarea.input { resize: vertical; min-height: 80px; }
 
     .label {
       display: block;
-      font-size: 10px;
+      font-size: 9px;
       font-family: 'JetBrains Mono', monospace;
       font-weight: 700;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: #52525b;
+      color: var(--c-muted);
       margin-bottom: 6px;
     }
 
-    .divider { border-color: #1e1e26; }
-
+    /* ── Timeline ── */
     .timeline-line {
       position: absolute;
-      left: 15px; top: 0; bottom: 0;
-      width: 1px;
-      background: linear-gradient(to bottom, #1e1e26, transparent);
+      left: 15px; top: 0; bottom: 0; width: 1px;
+      background: linear-gradient(to bottom, var(--border-2), transparent);
     }
-
     .timeline-dot {
       width: 8px; height: 8px;
       border-radius: 50%;
@@ -178,32 +238,128 @@
       flex-shrink: 0;
       margin-top: 4px;
     }
+    .dot-manual  { background: rgba(245,158,11,0.2);  border-color: #f59e0b; }
+    .dot-system  { background: rgba(153,102,255,0.2); border-color: #9966ff; }
+    .dot-agent   { background: rgba(0,221,170,0.2);   border-color: #00ddaa; }
 
-    .dot-manual  { background: rgba(245,158,11,0.2); border-color: #f59e0b; }
-    .dot-system  { background: rgba(139,92,246,0.2); border-color: #a78bfa; }
-    .dot-agent   { background: rgba(34,197,94,0.2);  border-color: #22c55e; }
-
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: #0c0c0f; }
-    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 2px; }
-
-    @keyframes pulse-amber {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+    /* ── Stat ring (pure CSS) ── */
+    .ring-wrap {
+      position: relative;
+      width: 52px; height: 52px;
     }
-    .pulse-amber { animation: pulse-amber 1.5s ease-in-out infinite; }
+    .ring-svg { transform: rotate(-90deg); }
+    .ring-track { fill: none; stroke: var(--border); stroke-width: 4; }
+    .ring-fill  { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+    .ring-label {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; font-weight: 700;
+    }
 
+    /* ── Agent pulse dots ── */
+    .agent-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .agent-dot-phantom { background: var(--c-phantom); box-shadow: 0 0 6px var(--c-phantom); }
+    .agent-dot-spectre { background: var(--c-spectre); box-shadow: 0 0 6px var(--c-spectre); }
+    .agent-dot-cortex  { background: var(--c-cortex);  box-shadow: 0 0 6px var(--c-cortex); }
+    .agent-dot-axiom   { background: var(--c-axiom);   box-shadow: 0 0 6px var(--c-axiom); }
+    .agent-dot-offline { background: #2a2a45; box-shadow: none; }
+
+    /* ── Scan bar animation ── */
+    .scan-bar {
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--c-spectre), transparent);
+      background-size: 200% 100%;
+      animation: scan 2s linear infinite;
+    }
+    @keyframes scan {
+      0%   { background-position: -100% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* ── Status animations ── */
+    @keyframes pulse-green {
+      0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--c-phantom); }
+      50%       { opacity: 0.5; box-shadow: 0 0 2px var(--c-phantom); }
+    }
+    @keyframes pulse-blue {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+    .pulse-green { animation: pulse-green 1.8s ease-in-out infinite; }
+    .pulse-blue  { animation: pulse-blue  2.4s ease-in-out infinite; }
+
+    /* ── Data glow text ── */
+    .glow-green  { color: var(--c-phantom); text-shadow: 0 0 8px rgba(0,255,65,0.4); }
+    .glow-blue   { color: var(--c-spectre); text-shadow: 0 0 8px rgba(0,170,255,0.4); }
+    .glow-violet { color: var(--c-cortex);  text-shadow: 0 0 8px rgba(153,102,255,0.4); }
+    .glow-teal   { color: var(--c-axiom);   text-shadow: 0 0 8px rgba(0,221,170,0.4); }
+    .glow-amber  { color: #f59e0b;          text-shadow: 0 0 8px rgba(245,158,11,0.3); }
+
+    /* ── Corner bracket decoration ── */
+    .bracket-tl::before, .bracket-br::after {
+      content: '';
+      position: absolute;
+      width: 8px; height: 8px;
+      border-color: var(--border-2);
+      border-style: solid;
+    }
+    .bracket-tl::before {
+      top: -1px; left: -1px;
+      border-width: 1px 0 0 1px;
+    }
+    .bracket-br::after {
+      bottom: -1px; right: -1px;
+      border-width: 0 1px 1px 0;
+    }
+
+    /* ── Horizontal divider with label ── */
+    .section-rule {
+      display: flex; align-items: center; gap: 12px;
+      margin: 20px 0 14px;
+    }
+    .section-rule .rule-line {
+      flex: 1; height: 1px;
+      background: linear-gradient(90deg, var(--border-2), transparent);
+    }
+    .section-rule .rule-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--c-muted);
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+
+    /* ── Classified stamp ── */
     .classified-stamp {
       display: inline-block;
-      border: 2px solid rgba(239,68,68,0.4);
-      color: rgba(239,68,68,0.6);
+      border: 1px solid rgba(239,68,68,0.35);
+      color: rgba(239,68,68,0.55);
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.2em;
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.2em; text-transform: uppercase;
       padding: 2px 8px;
       transform: rotate(-2deg);
-      text-transform: uppercase;
+    }
+
+    /* ── Running state indicator ── */
+    .running-indicator {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: #f59e0b;
+    }
+    .running-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #f59e0b;
+      animation: pulse-blue 0.8s ease-in-out infinite;
     }
   </style>
   {% block head %}{% endblock %}
@@ -211,41 +367,66 @@
 <body class="min-h-screen">
 
   <!-- Top nav -->
-  <nav class="border-b border-[#1e1e26] px-6 py-3 flex items-center justify-between sticky top-0 z-50"
-       style="background: rgba(12,12,15,0.95); backdrop-filter: blur(8px);">
+  <nav style="background: rgba(8,8,16,0.96); border-bottom: 1px solid var(--border); backdrop-filter: blur(10px);"
+       class="px-6 py-3 flex items-center justify-between sticky top-0 z-50">
     <div class="flex items-center gap-6">
-      <a href="/" class="flex items-center gap-3">
-        <div class="w-6 h-6 relative">
-          <div class="absolute inset-0 border border-amber-DEFAULT opacity-60" style="border-color:#f59e0b"></div>
-          <div class="absolute inset-[3px] border border-amber-DEFAULT opacity-40" style="border-color:#f59e0b"></div>
-          <div class="absolute inset-[6px] bg-amber-DEFAULT opacity-80" style="background:#f59e0b"></div>
+      <a href="/" class="flex items-center gap-3 group">
+        <!-- Logo mark: nested hex rings -->
+        <div class="relative w-7 h-7 flex-shrink-0">
+          <div class="absolute inset-0 border rounded-sm" style="border-color:rgba(0,170,255,0.4); transform:rotate(0deg)"></div>
+          <div class="absolute inset-[3px] border rounded-sm" style="border-color:rgba(0,255,65,0.4); transform:rotate(45deg)"></div>
+          <div class="absolute inset-[7px] rounded-sm" style="background:rgba(153,102,255,0.6)"></div>
         </div>
-        <span class="mono font-bold tracking-widest text-sm uppercase" style="color:#f59e0b; letter-spacing:0.25em;">
-          {% block system_name %}CASE FILES{% endblock %}
-        </span>
+        <div>
+          <div class="mono font-bold text-sm tracking-widest glow-green" style="letter-spacing:0.3em; line-height:1">
+            {% block system_name %}BEDROCK{% endblock %}
+          </div>
+          <div class="mono text-zinc-700" style="font-size:8px; letter-spacing:0.2em">INTELLIGENCE PLATFORM</div>
+        </div>
       </a>
-      <div class="h-4 w-px bg-[#1e1e26]"></div>
-      <a href="/" class="text-xs mono text-zinc-500 hover:text-zinc-300 transition-colors {% if request.url.path == '/' %}text-zinc-300{% endif %}">
+
+      <div style="width:1px; height:20px; background:var(--border)"></div>
+
+      <a href="/" class="mono text-xs tracking-wide transition-colors
+         {% if request.url.path == '/' %}glow-blue{% else %}text-zinc-600 hover:text-zinc-400{% endif %}">
         DASHBOARD
       </a>
-      <a href="/cases/new" class="text-xs mono text-zinc-500 hover:text-zinc-300 transition-colors {% if request.url.path == '/cases/new' %}text-zinc-300{% endif %}">
-        NEW CASE
+      <a href="/cases/new" class="mono text-xs tracking-wide transition-colors
+         {% if request.url.path == '/cases/new' %}glow-green{% else %}text-zinc-600 hover:text-zinc-400{% endif %}">
+        + NEW CASE
       </a>
     </div>
-    <div class="flex items-center gap-3">
-      <span class="mono text-xs text-zinc-600" id="clock"></span>
-      <div class="w-2 h-2 rounded-full bg-green-500 pulse-amber" style="animation: pulse-amber 3s ease-in-out infinite;"></div>
-      <span class="mono text-xs text-zinc-600">ONLINE</span>
+
+    <div class="flex items-center gap-4">
+      <!-- Agent status dots -->
+      <div class="flex items-center gap-2" title="Agent status">
+        {% for name, cls in [('P1','phantom'),('SP','spectre'),('CX','cortex'),('AX','axiom')] %}
+        <div class="flex items-center gap-1">
+          <div class="agent-dot agent-dot-{{ cls }} pulse-green" style="animation-delay:{{ loop.index0 * 0.3 }}s"></div>
+          <span class="mono text-zinc-700" style="font-size:9px">{{ name }}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div style="width:1px; height:16px; background:var(--border)"></div>
+
+      <!-- Scan bar -->
+      <div style="width:60px">
+        <div class="scan-bar"></div>
+      </div>
+
+      <div style="width:1px; height:16px; background:var(--border)"></div>
+
+      <span class="mono text-zinc-700 text-xs" id="clock" style="min-width:150px; text-align:right"></span>
     </div>
   </nav>
 
   <!-- Main content -->
-  <main class="max-w-7xl mx-auto px-6 py-8">
+  <main class="max-w-7xl mx-auto px-6 py-7">
     {% block content %}{% endblock %}
   </main>
 
   <script>
-    // Live clock
     function updateClock() {
       const now = new Date();
       document.getElementById('clock').textContent =

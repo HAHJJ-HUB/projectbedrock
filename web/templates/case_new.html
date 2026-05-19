@@ -15,7 +15,7 @@
 
   <form method="post" action="/cases/new" class="space-y-5">
 
-    <div class="card p-6 space-y-5">
+    <div class="p-6 space-y-5" style="background:var(--card);border:1px solid var(--border);border-radius:3px;border-top:2px solid rgba(0,170,255,0.4)">
       <div>
         <label class="label">Subject / Target Name</label>
         <input type="text" name="name" class="input" placeholder="e.g. Project MKUltra, Cold Fusion Research, ..." required autofocus>
@@ -59,7 +59,7 @@
 
     <div class="flex items-center justify-between">
       <a href="/" class="btn btn-ghost">Cancel</a>
-      <button type="submit" class="btn btn-primary">
+      <button type="submit" class="btn btn-green">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
           <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>

@@ -1,37 +1,86 @@
 {% extends "base.html" %}
 {% block title %}{{ case.case_number }} — Narrative Analysis{% endblock %}
 
+{% block head %}
+<style>
+  .data-panel { background: var(--card); border: 1px solid var(--border); border-radius: 3px; }
+  .panel-head {
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-head .panel-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+    color: #52527a;
+  }
+  .analysis-body h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--c-cortex); margin-top: 28px; margin-bottom: 10px;
+    padding-top: 16px; border-top: 1px solid var(--border);
+  }
+  .analysis-body h2:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+  .analysis-body p  { color: #8080a0; font-size: 13px; line-height: 1.7; margin-bottom: 10px; }
+  .analysis-body li { color: #8080a0; font-size: 13px; line-height: 1.6; margin-bottom: 4px; }
+  .analysis-body strong { color: #c0c0d8; }
+  .analysis-body code {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    background: rgba(153,102,255,0.08); color: var(--c-cortex);
+    padding: 1px 5px; border-radius: 2px;
+  }
+  .chip {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 2px;
+    background: rgba(255,255,255,0.04); color: #6b6b9a; border: 1px solid var(--border);
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="mb-6">
-  <a href="/cases/{{ case.id }}" class="mono text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1 mb-4">
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    {{ case.case_number }} / {{ case.name }}
-  </a>
-  <div class="flex items-center gap-3 mb-1">
-    <span class="mono font-bold text-sm" style="color:#f59e0b">{{ case.case_number }}</span>
-    <span class="badge badge-{{ case.status }}">{{ case.status }}</span>
-  </div>
-  <h1 class="text-xl font-bold text-zinc-100">Narrative Analysis</h1>
-  <p class="text-zinc-500 text-sm mt-1">Certainty inflation · Framing shift · Contradiction · Language drift · Compression</p>
+
+<!-- Breadcrumb -->
+<div class="flex items-center gap-2 mb-5 mono text-xs text-zinc-700">
+  <a href="/" class="hover:text-zinc-400 transition-colors">DASHBOARD</a>
+  <span>/</span>
+  <a href="/cases/{{ case.id }}" class="hover:text-zinc-400 transition-colors glow-amber">{{ case.case_number }}</a>
+  <span>/</span>
+  <span class="text-zinc-500">Narrative Analysis</span>
 </div>
 
-<div class="card p-6">
-  {% if "No stored findings" in analysis or "error" in analysis.lower() %}
+<!-- Header -->
+<div class="mb-6">
+  <div class="flex items-center gap-2 mb-2">
+    <span class="mono font-bold text-sm glow-amber">{{ case.case_number }}</span>
+    <span class="badge badge-{{ case.status }}">{{ case.status }}</span>
+    <span class="chip">narrative forensics</span>
+  </div>
+  <h1 class="text-xl font-bold text-zinc-100">Narrative Analysis</h1>
+  <p class="text-zinc-600 text-xs mono mt-1">
+    Certainty inflation · Framing shift · Contradiction detection · Language drift · Narrative compression
+  </p>
+</div>
+
+<!-- Analysis panel -->
+<div class="data-panel" style="border-top:2px solid rgba(153,102,255,0.5)">
+  <div class="panel-head">
+    <span class="panel-title">CORTEX // Corpus Analysis</span>
+    <span class="mono text-xs" style="color:var(--c-cortex)">{{ case.name }}</span>
+  </div>
+
+  <div class="p-6">
+    {% if "No stored findings" in analysis or "error" in analysis.lower() %}
     <div class="text-center py-12">
-      <p class="mono text-xs text-zinc-600 tracking-wide mb-2">NO CORPUS AVAILABLE</p>
-      <p class="text-zinc-500 text-sm">Run intelligence gathering first to build a corpus for analysis.</p>
-      <a href="/cases/{{ case.id }}" class="btn btn-primary mt-4 inline-flex">Back to Case File</a>
+      <div class="mono text-xs text-zinc-700 tracking-widest mb-3">NO CORPUS AVAILABLE</div>
+      <p class="text-zinc-600 text-sm mb-6">Run intelligence gathering first to build a corpus for analysis.</p>
+      <a href="/cases/{{ case.id }}" class="btn btn-primary">Back to Case File</a>
     </div>
-  {% else %}
-    <div class="prose prose-invert prose-sm max-w-none
-                [&_h2]:text-zinc-100 [&_h2]:font-bold [&_h2]:text-base [&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:pt-4 [&_h2]:border-t [&_h2]:border-[#1e1e26]
-                [&_p]:text-zinc-400 [&_p]:leading-relaxed
-                [&_li]:text-zinc-400 [&_li]:text-sm
-                [&_strong]:text-zinc-200
-                [&_code]:text-amber-400 [&_code]:bg-[#1a1408] [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono
-                [&_em]:text-zinc-500">
+    {% else %}
+    <div class="analysis-body">
       {{ analysis | replace('\n', '<br>') | safe }}
     </div>
-  {% endif %}
+    {% endif %}
+  </div>
 </div>
+
 {% endblock %}
