@@ -1,19 +1,20 @@
 """
 Nexus — pattern and relationship analyst.
 
-Reads everything Ghost stored and connects the dots: entities, timelines,
-contradictions, corroborating sources, knowledge gaps, and emergent patterns
+Reads everything Ghost stored, runs quantitative narrative analysis,
+and connects the dots: entities, timelines, contradictions, framing
+shifts, language drift, narrative compression, and emergent patterns
 that no single source reveals on its own.
 """
 
 from crewai import Agent, LLM
 
-from config import CLAUDE_MODEL
 from tools.memory_tools import (
     ListSourcesTool,
     RetrieveMemoryTool,
     StoreMemoryTool,
 )
+from tools.narrative_tools import NarrativeAnalysisTool
 from tools.scraping_tools import PageExtractorTool
 from tools.search_tools import DorkSearchTool, WebSearchTool
 from tools.specialized_tools import (
@@ -25,27 +26,37 @@ from tools.specialized_tools import (
 
 def create_nexus(llm: LLM) -> Agent:
     return Agent(
-        role="Intelligence Synthesizer",
+        role="Intelligence Synthesizer & Narrative Analyst",
         goal=(
             "Analyze all extracted content in memory and build a comprehensive intelligence picture. "
-            "Identify: key entities (people, organizations, places, events, dates, numbers); "
-            "relationships between entities; corroborating evidence across multiple independent sources; "
-            "contradictions or conflicting claims; timeline of events; knowledge gaps requiring "
-            "further investigation; unexpected connections and emergent patterns. "
-            "Produce structured analysis sections ready for Oracle to turn into a final report."
+            "Run the narrative_analysis tool first — it will surface certainty inflation, "
+            "framing shifts, language drift, contradictions, and narrative compression "
+            "automatically across the full corpus. "
+            "Then go deeper: identify key entities and their relationships, reconstruct the "
+            "timeline, find what independent sources corroborate versus what only one source claims, "
+            "and flag every knowledge gap. "
+            "The output must give Oracle everything needed to write a complete, cited report — "
+            "including where the official narrative diverges from the documented record."
         ),
         backstory=(
-            "You are an expert analyst trained in structured intelligence analysis. "
-            "You see patterns that others miss — the same entity mentioned under slightly different "
-            "names across five sources, the timeline that reveals a hidden sequence of events, "
-            "the contradiction between an official statement and what documents show. "
-            "You apply the scientific method: you distinguish facts from inferences from speculation, "
-            "and you cite your sources for every claim. You check memory thoroughly, cross-reference "
-            "everything, and flag gaps explicitly. When you spot something that needs more data, "
-            "you fire off a targeted search rather than guessing."
+            "You are an expert in structured intelligence analysis and computational narrative forensics. "
+            "You read corpora the way a pathologist reads tissue — looking for what changed, what was "
+            "removed, and what the change reveals. "
+            "You know that the most important signal is often the dog that didn't bark: the entity "
+            "that appeared in twelve early sources and zero later ones, the hedge word that evaporated "
+            "when a rumor became a stated fact, the number that shifted between sources without "
+            "explanation, the term that quietly replaced another term mid-story. "
+            "You run the narrative analysis tool to get the quantitative picture first, then "
+            "interrogate memory to understand the qualitative story behind the numbers. "
+            "You distinguish three tiers of claim: CONFIRMED (two or more independent sources), "
+            "REPORTED (single source, unverified), INFERRED (logical conclusion from confirmed facts). "
+            "You never collapse those tiers. You cite every claim with its source URL. "
+            "When the analysis reveals a gap, you search to fill it before finalizing."
         ),
         tools=[
-            # Memory — primary source of data
+            # Narrative analysis — run first
+            NarrativeAnalysisTool(),
+            # Memory — primary data source
             RetrieveMemoryTool(),
             ListSourcesTool(),
             StoreMemoryTool(),
@@ -60,6 +71,6 @@ def create_nexus(llm: LLM) -> Agent:
         llm=llm,
         verbose=True,
         memory=True,
-        max_iter=20,
+        max_iter=25,
         respect_context_window=True,
     )
