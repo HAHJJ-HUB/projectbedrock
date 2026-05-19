@@ -137,6 +137,6 @@ def create_infiltrator(llm: LLM) -> Agent:
         llm=llm,
         verbose=True,
         memory=True,
-        max_iter=30,
+        max_iter=40,
         respect_context_window=True,
     )
