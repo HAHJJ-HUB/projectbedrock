@@ -92,11 +92,10 @@
       ("04", "Oracle",      "oracle",      "writes the finding"),
     ] %}
     <div class="card card-filer-{{ filer }}" style="overflow:hidden;position:relative">
-      <!-- Portrait pending frame -->
-      <div class="portrait-pending">
-        <div class="badge badge-{{ filer }}" style="width:32px;height:32px;font-size:11px">{{ num }}</div>
-        <span style="font-family:var(--font-serif);font-style:italic;font-size:11px;color:var(--ink-faded)">{{ name }}</span>
-      </div>
+      <!-- Portrait -->
+      <img src="/static/images/{{ filer }}.png"
+           alt="{{ name }}"
+           style="display:block;width:100%;height:200px;object-fit:contain;background:var(--paper)">
       <!-- Footer -->
       <div style="padding:14px 16px">
         <div class="flex items-center gap-2" style="margin-bottom:4px">

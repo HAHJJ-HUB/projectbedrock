@@ -229,9 +229,9 @@
               ("04","Oracle","oracle"),
             ] %}
             <div style="position:relative;overflow:hidden;border-top:2px solid var(--filer-{{ filer }})">
-              <div class="portrait-pending-sm">
-                <div class="badge badge-{{ filer }}" style="width:20px;height:20px;font-size:7px">{{ num }}</div>
-              </div>
+              <img src="/static/images/{{ filer }}.png"
+                   alt="{{ name }}"
+                   style="display:block;width:100%;height:72px;object-fit:contain;background:var(--paper)">
               <div style="padding:5px 6px;display:flex;align-items:center;justify-content:space-between">
                 <span style="font-family:var(--font-sans);font-size:9px;font-weight:500;color:var(--bone-body)">{{ name }}</span>
                 <div class="badge badge-{{ filer }}" style="width:16px;height:16px;font-size:7px">{{ num }}</div>
