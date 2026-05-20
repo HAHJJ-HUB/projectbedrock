@@ -4,7 +4,7 @@
 
 {% block masthead %}
 <nav class="masthead">
-  <div class="flex items-center" style="gap:40px">
+  <div class="flex items-center gap-10">
     <a href="/" class="masthead-brand">
       <div class="masthead-mark">CF</div>
       <span class="masthead-name">The Casefilers</span>
@@ -186,7 +186,7 @@
 .fp-body {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
@@ -378,7 +378,8 @@
           ("II",  "Contradictions on file",  ""),
           ("III", "Narrative drift",          ""),
           ("IV",  "Items filed",              stats.sources if stats.sources else ""),
-          ("V",   "Exhibits",                 ""),
+          ("V",   "The source inventory",    ""),
+          ("VI",  "Exhibits",                ""),
         ] %}
         {% for roman, title, count in sections %}
         <div class="cf-toc-row">
