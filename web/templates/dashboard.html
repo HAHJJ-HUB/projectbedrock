@@ -81,12 +81,21 @@
       ("03", "Nexus",       "nexus",       "At the board"),
       ("04", "Oracle",      "oracle",      "At her desk"),
     ] %}
-    <div class="card card-filer-{{ filer }}" style="padding:16px 18px">
-      <div class="flex items-center gap-3" style="margin-bottom:8px">
-        <div class="badge badge-{{ filer }}">{{ num }}</div>
-        <span style="font-family:var(--font-sans);font-size:13px;font-weight:500;color:var(--bone)">{{ name }}</span>
+    <div class="card card-filer-{{ filer }}" style="overflow:hidden;position:relative">
+      <!-- Portrait -->
+      <div style="height:200px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--wood-deepest);position:relative">
+        <img src="/static/images/{{ filer }}.png"
+             alt="{{ name }}"
+             style="height:100%;width:100%;object-fit:contain;object-position:center bottom;filter:brightness(0.9);mix-blend-mode:normal">
       </div>
-      <div style="font-family:var(--font-serif);font-style:italic;font-size:12px;color:var(--brass-faded)">{{ role }}</div>
+      <!-- Footer -->
+      <div style="padding:14px 16px">
+        <div class="flex items-center gap-2" style="margin-bottom:4px">
+          <div class="badge badge-{{ filer }}" style="width:22px;height:22px;font-size:8px">{{ num }}</div>
+          <span style="font-family:var(--font-sans);font-size:13px;font-weight:500;color:var(--bone)">{{ name }}</span>
+        </div>
+        <div style="font-family:var(--font-serif);font-style:italic;font-size:12px;color:var(--brass-faded)">{{ role }}</div>
+      </div>
     </div>
     {% endfor %}
   </div>

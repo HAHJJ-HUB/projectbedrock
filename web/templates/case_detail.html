@@ -218,21 +218,28 @@
           <span style="font-family:var(--font-mono);font-size:10px;color:var(--filer-infiltrator-tint)">4 filers</span>
         </div>
         <div class="panel-body">
-          <div style="margin-bottom:16px">
+          <!-- Filer portrait strip -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px">
             {% for num, name, filer in [
               ("01","Infiltrator","infiltrator"),
               ("02","Ghost","ghost"),
               ("03","Nexus","nexus"),
               ("04","Oracle","oracle"),
             ] %}
-            <div class="filer-standby">
-              <div class="flex items-center gap-2">
-                <div class="badge badge-{{ filer }}" style="width:22px;height:22px;font-size:8px">{{ num }}</div>
-                <span style="font-family:var(--font-sans);font-size:12px;font-weight:500;color:var(--bone-body)">{{ name }}</span>
+            <div style="position:relative;overflow:hidden;border-top:2px solid var(--filer-{{ filer }})">
+              <div style="height:72px;background:var(--wood-deepest);display:flex;align-items:center;justify-content:center">
+                <img src="/static/images/{{ filer }}.png" alt="{{ name }}"
+                     style="height:100%;width:100%;object-fit:contain;object-position:center bottom">
               </div>
-              <span class="status-pill" style="font-size:8px;color:var(--brass-deepest);border-color:var(--border-dark)">standby</span>
+              <div style="padding:5px 6px;display:flex;align-items:center;justify-content:space-between">
+                <span style="font-family:var(--font-sans);font-size:9px;font-weight:500;color:var(--bone-body)">{{ name }}</span>
+                <div class="badge badge-{{ filer }}" style="width:16px;height:16px;font-size:7px">{{ num }}</div>
+              </div>
             </div>
             {% endfor %}
+          </div>
+          <div style="margin-bottom:4px;padding-bottom:12px;border-bottom:0.5px solid var(--border-dark)">
+            <span style="font-family:var(--font-serif);font-style:italic;font-size:11px;color:var(--brass-deepest)">All four on standby</span>
           </div>
 
           <form method="post" action="/cases/{{ case.id }}/research" id="run-form">
