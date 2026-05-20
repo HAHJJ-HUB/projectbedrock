@@ -88,7 +88,8 @@ def create_case(
             (case_number, name, subject_type, description, priority,
              json.dumps(tags or []), now, now),
         )
-        return get_case(cur.lastrowid)
+        case_id = cur.lastrowid
+    return get_case(case_id)
 
 
 def get_case(case_id: int) -> dict | None:

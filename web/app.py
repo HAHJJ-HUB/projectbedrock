@@ -80,8 +80,7 @@ async def dashboard(request: Request, status: str = ""):
         "archived": sum(1 for c in list_cases("archived")),
         "total":    len(list_cases()),
     }
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "dashboard.html", {
         "cases": cases,
         "counts": counts,
         "active_filter": status,
@@ -90,7 +89,7 @@ async def dashboard(request: Request, status: str = ""):
 
 @app.get("/cases/new", response_class=HTMLResponse)
 async def new_case_form(request: Request):
-    return templates.TemplateResponse("case_new.html", {"request": request})
+    return templates.TemplateResponse(request, "case_new.html")
 
 
 @app.post("/cases/new")
@@ -130,8 +129,7 @@ async def case_detail(request: Request, case_id: int):
     except Exception:
         pass
 
-    return templates.TemplateResponse("case_detail.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "case_detail.html", {
         "case": case,
         "notes": notes,
         "runs": runs,
@@ -215,8 +213,7 @@ async def case_file_view(request: Request, case_id: int):
     except Exception:
         pass
     bound_at = datetime.utcnow().strftime("%Y-%m-%d  %H:%M UTC")
-    return templates.TemplateResponse("case_file.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "case_file.html", {
         "case": case,
         "notes": notes,
         "runs": runs,
@@ -239,8 +236,7 @@ async def analyze_case(request: Request, case_id: int):
         analysis = tool._run(json.dumps({"topic": case["name"], "n_sources": 60}))
     except Exception as e:
         analysis = f"Analysis error: {e}"
-    return templates.TemplateResponse("case_analyze.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "case_analyze.html", {
         "case": case,
         "analysis": analysis,
     })
