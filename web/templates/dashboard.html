@@ -42,6 +42,16 @@
   color: var(--brass-deepest);
   flex-shrink: 0;
 }
+
+.portrait-pending {
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: var(--paper);
+}
 {% endblock %}
 
 {% block content %}
@@ -49,7 +59,7 @@
 
   <!-- Briefing room header -->
   <div style="margin-bottom:36px">
-    <div class="eyebrow" style="margin-bottom:10px">Intelligence management system</div>
+    <div class="eyebrow" style="margin-bottom:10px">Briefing room · Room 7</div>
     <h1 style="font-family:var(--font-serif);font-size:30px;font-weight:500;color:var(--bone);margin-bottom:6px">
       Case file registry
     </h1>
@@ -62,7 +72,7 @@
   <div class="grid grid-4 gap-3" style="margin-bottom:36px">
     {% for label, val, color in [
       ("Total cases", counts.total,    "var(--brass)"),
-      ("Active",      counts.active,   "var(--ops-green)"),
+      ("Active",      counts.active,   "var(--brass)"),
       ("Closed",      counts.closed,   "var(--brass-faded)"),
       ("Archived",    counts.archived, "var(--brass-deepest)"),
     ] %}
@@ -76,17 +86,16 @@
   <!-- Filer roster -->
   <div class="grid grid-4 gap-3" style="margin-bottom:36px">
     {% for num, name, filer, role in [
-      ("01", "Infiltrator", "infiltrator", "In the field"),
-      ("02", "Ghost",       "ghost",       "On the recovery"),
-      ("03", "Nexus",       "nexus",       "At the board"),
-      ("04", "Oracle",      "oracle",      "At her desk"),
+      ("01", "Infiltrator", "infiltrator", "finds what search misses"),
+      ("02", "Ghost",       "ghost",       "recovers what disappeared"),
+      ("03", "Nexus",       "nexus",       "connects the record"),
+      ("04", "Oracle",      "oracle",      "writes the finding"),
     ] %}
     <div class="card card-filer-{{ filer }}" style="overflow:hidden;position:relative">
-      <!-- Portrait -->
-      <div style="height:200px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--wood-deepest);position:relative">
-        <img src="/static/images/{{ filer }}.png"
-             alt="{{ name }}"
-             style="height:100%;width:100%;object-fit:contain;object-position:center bottom;filter:brightness(0.9);mix-blend-mode:normal">
+      <!-- Portrait pending frame -->
+      <div class="portrait-pending">
+        <div class="badge badge-{{ filer }}" style="width:32px;height:32px;font-size:11px">{{ num }}</div>
+        <span style="font-family:var(--font-serif);font-style:italic;font-size:11px;color:var(--ink-faded)">{{ name }}</span>
       </div>
       <!-- Footer -->
       <div style="padding:14px 16px">
@@ -125,7 +134,7 @@
   <div class="card" style="padding:64px;text-align:center">
     <div class="eyebrow" style="margin-bottom:12px">No cases on file</div>
     <p style="font-family:var(--font-serif);font-style:italic;font-size:15px;color:var(--brass-faded);margin-bottom:24px">
-      Open a case to begin intelligence gathering.
+      The unit is standing by. Open a case to convene.
     </p>
     <a href="/cases/new" class="btn btn-primary">Open first case</a>
   </div>

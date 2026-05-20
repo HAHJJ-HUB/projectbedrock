@@ -200,6 +200,32 @@ async def run_status(case_id: int, run_id: int):
     })
 
 
+@app.get("/cases/{case_id}/file", response_class=HTMLResponse)
+async def case_file_view(request: Request, case_id: int):
+    case = get_case(case_id)
+    if not case:
+        return HTMLResponse("Case not found", status_code=404)
+    notes = get_notes(case_id)
+    runs = get_runs(case_id)
+    stats = case_stats(case_id)
+    findings = []
+    try:
+        from memory.persistent_memory import retrieve_findings
+        findings = retrieve_findings(case["name"], topic=case["name"], n_results=50)
+    except Exception:
+        pass
+    bound_at = datetime.utcnow().strftime("%Y-%m-%d  %H:%M UTC")
+    return templates.TemplateResponse("case_file.html", {
+        "request": request,
+        "case": case,
+        "notes": notes,
+        "runs": runs,
+        "stats": stats,
+        "findings": findings,
+        "bound_at": bound_at,
+    })
+
+
 @app.get("/cases/{case_id}/analyze", response_class=HTMLResponse)
 async def analyze_case(request: Request, case_id: int):
     case = get_case(case_id)

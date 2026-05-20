@@ -40,22 +40,23 @@
   border: 0.5px solid;
 }
 .dot-manual { background: var(--amber);           border-color: var(--amber); }
-.dot-system { background: var(--filer-nexus);     border-color: var(--filer-nexus); }
-.dot-agent  { background: var(--filer-ghost);     border-color: var(--filer-ghost); }
+.dot-unit   { background: var(--filer-nexus);     border-color: var(--filer-nexus); }
+.dot-filed  { background: var(--filer-ghost);     border-color: var(--filer-ghost); }
 
-/* Run status bar */
+/* Session status bar */
 .run-bar { height: 2px; background: var(--border-dark); margin-top: 6px; }
 .run-bar-fill { height: 100%; }
 @keyframes scan { 0%,100%{opacity:1} 50%{opacity:0.3} }
 .run-bar-live { animation: scan 1.6s ease-in-out infinite; }
 
-/* Filer standby row */
-.filer-standby {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 0.5px solid var(--border-dark);
+/* Portrait pending frame */
+.portrait-pending-sm {
+  height: 72px;
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.filer-standby:last-child { border-bottom: none; }
 {% endblock %}
 
 {% block content %}
@@ -94,6 +95,7 @@
       {% endif %}
     </div>
     <div class="flex items-center gap-2">
+      <a href="/cases/{{ case.id }}/file" class="btn btn-primary">View case file ↗</a>
       <a href="/cases/{{ case.id }}/analyze" class="btn btn-ghost">Narrative analysis</a>
       <form method="post" action="/cases/{{ case.id }}/status" style="display:inline">
         {% if case.status == 'active' %}
@@ -111,8 +113,8 @@
   <div class="grid grid-4 gap-3" style="margin-bottom:24px">
     {% for label, val, color in [
       ("Notes",         stats.notes,          "var(--brass)"),
-      ("Research runs", stats.runs,           "var(--filer-ghost-tint)"),
-      ("Sources found", stats.sources,        "var(--filer-nexus-tint)"),
+      ("Convened",      stats.runs,           "var(--filer-ghost-tint)"),
+      ("Items filed",   stats.sources,        "var(--filer-nexus-tint)"),
       ("Opened",        case.created_at[:10], "var(--brass-faded)"),
     ] %}
     <div class="card" style="padding:16px 20px">
@@ -154,7 +156,7 @@
           {% if not notes %}
           <div style="text-align:center;padding:32px 0">
             <div class="eyebrow" style="margin-bottom:8px">No entries yet</div>
-            <p style="font-family:var(--font-serif);font-style:italic;font-size:13px;color:var(--brass-deepest)">Add notes or run intelligence gathering.</p>
+            <p style="font-family:var(--font-serif);font-style:italic;font-size:13px;color:var(--brass-deepest)">Add an observation, or convene the unit to begin building the record.</p>
           </div>
           {% else %}
           <div class="timeline-rail">
@@ -162,12 +164,12 @@
             <div class="timeline-item">
               <div class="timeline-dot
                 {% if note.source == 'manual' %}dot-manual
-                {% elif note.source == 'system' %}dot-system
-                {% else %}dot-agent{% endif %}"></div>
+                {% elif note.source == 'unit' or note.source == 'system' %}dot-unit
+                {% else %}dot-filed{% endif %}"></div>
               <div class="flex items-center gap-2" style="margin-bottom:4px">
                 <span style="font-family:var(--font-sans);font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;
-                  color:{% if note.source == 'manual' %}var(--amber){% elif note.source == 'system' %}var(--filer-nexus-tint){% else %}var(--filer-ghost-tint){% endif %}">
-                  {{ note.source }}{% if note.agent %} / {{ note.agent }}{% endif %}
+                  color:{% if note.source == 'manual' %}var(--amber){% elif note.source == 'unit' or note.source == 'system' %}var(--filer-nexus-tint){% else %}var(--filer-ghost-tint){% endif %}">
+                  {% if note.source == 'system' or note.source == 'unit' %}the unit{% elif note.agent %}{{ note.agent }}{% else %}{{ note.source }}{% endif %}
                 </span>
                 <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest)">
                   {{ note.created_at[:16] | replace('T', ' ') }}
@@ -181,12 +183,12 @@
         </div>
       </div>
 
-      <!-- Memory corpus -->
+      <!-- Filed material -->
       {% if findings %}
       <div class="panel">
         <div class="panel-head">
-          <span class="section-label">Memory corpus</span>
-          <span style="font-family:var(--font-mono);font-size:10px;color:var(--filer-nexus-tint)">{{ findings | length }} vectors</span>
+          <span class="section-label">The record</span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--filer-nexus-tint)">{{ findings | length }} items filed</span>
         </div>
         <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
           {% for f in findings[:10] %}
@@ -199,7 +201,7 @@
           {% endfor %}
           {% if findings | length > 10 %}
           <div style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest);text-align:center">
-            + {{ findings | length - 10 }} more vectors in memory
+            + {{ findings | length - 10 }} more on file
           </div>
           {% endif %}
         </div>
@@ -211,10 +213,10 @@
     <!-- Right sidebar -->
     <div class="space-y-4">
 
-      <!-- Deploy panel -->
+      <!-- Convene panel -->
       <div class="panel" style="border-top:2px solid var(--filer-infiltrator)">
         <div class="panel-head">
-          <span class="section-label">Deploy the unit</span>
+          <span class="section-label">Convene the unit</span>
           <span style="font-family:var(--font-mono);font-size:10px;color:var(--filer-infiltrator-tint)">4 filers</span>
         </div>
         <div class="panel-body">
@@ -227,9 +229,8 @@
               ("04","Oracle","oracle"),
             ] %}
             <div style="position:relative;overflow:hidden;border-top:2px solid var(--filer-{{ filer }})">
-              <div style="height:72px;background:var(--wood-deepest);display:flex;align-items:center;justify-content:center">
-                <img src="/static/images/{{ filer }}.png" alt="{{ name }}"
-                     style="height:100%;width:100%;object-fit:contain;object-position:center bottom">
+              <div class="portrait-pending-sm">
+                <div class="badge badge-{{ filer }}" style="width:20px;height:20px;font-size:7px">{{ num }}</div>
               </div>
               <div style="padding:5px 6px;display:flex;align-items:center;justify-content:space-between">
                 <span style="font-family:var(--font-sans);font-size:9px;font-weight:500;color:var(--bone-body)">{{ name }}</span>
@@ -255,21 +256,20 @@
                 <circle cx="4.5" cy="4.5" r="3" stroke="currentColor" stroke-width="1.1"/>
                 <path d="M4.5 3v1.8l1.1 1.1" stroke="currentColor" stroke-width="0.9" stroke-linecap="round"/>
               </svg>
-              Initiate breach
+              Convene the unit ↗
             </button>
           </form>
           <p style="font-family:var(--font-serif);font-style:italic;font-size:11px;color:var(--brass-deepest);margin-top:10px;line-height:1.6">
-            Deploys Infiltrator → Ghost → Nexus → Oracle in sequence.
-            Results accumulate in memory and surface in the timeline.
+            Infiltrator goes in first. The unit works the case in sequence. Items filed in the timeline as the record builds.
           </p>
         </div>
       </div>
 
-      <!-- Run history -->
+      <!-- Session history -->
       {% if runs %}
       <div class="panel">
         <div class="panel-head">
-          <span class="section-label">Research runs</span>
+          <span class="section-label">Sessions on record</span>
           <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest)">{{ runs | length }}</span>
         </div>
         <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px" id="runs-list">
@@ -290,9 +290,9 @@
               </div>
               <div style="text-align:right;flex-shrink:0">
                 {% if run.sources_found %}
-                <div style="font-family:var(--font-mono);font-size:10px;color:var(--filer-nexus-tint)">{{ run.sources_found }} vectors</div>
+                <div style="font-family:var(--font-mono);font-size:10px;color:var(--filer-nexus-tint)">{{ run.sources_found }} items</div>
                 {% endif %}
-                {% if run.error %}<div style="font-family:var(--font-mono);font-size:10px;color:var(--contradiction)">error</div>{% endif %}
+                {% if run.error %}<div style="font-family:var(--font-mono);font-size:10px;color:var(--contradiction)">blocked</div>{% endif %}
               </div>
             </div>
             <div class="run-bar">
@@ -353,7 +353,7 @@ pollRuns();
 
 document.getElementById('run-form')?.addEventListener('submit', () => {
   const btn = document.getElementById('run-btn');
-  btn.innerHTML = '<div class="live-dot" style="display:inline-block"></div>&nbsp; Dispatching…';
+  btn.textContent = 'The unit is convening…';
   btn.disabled = true;
   btn.style.opacity = '0.5';
 });
