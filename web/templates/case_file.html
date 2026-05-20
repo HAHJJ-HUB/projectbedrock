@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+{% block title %}{{ case.case_number }} · Filed — The Casefilers{% endblock %}
+{% block body_class %}paper-mode{% endblock %}
+
+{% block masthead %}
+<nav class="masthead">
+  <div class="flex items-center gap-10">
+    <a href="/" class="masthead-brand">
+      <div class="masthead-mark">CF</div>
+      <span class="masthead-name">The Casefilers</span>
+    </a>
+    <div style="width:0.5px;height:20px;background:var(--border-dark)"></div>
+    <a href="/cases/{{ case.id }}"
+       style="display:flex;align-items:center;gap:6px;font-family:var(--font-sans);font-size:10px;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;color:var(--brass-deepest);text-decoration:none;transition:color 0.1s"
+       onmouseover="this.style.color='var(--brass-muted)'"
+       onmouseout="this.style.color='var(--brass-deepest)'">
+      <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+        <path d="M6 1L2 4l4 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      {{ case.case_number }}
+    </a>
+  </div>
+  <div class="masthead-meta">
+    <div style="display:flex;align-items:center;gap:6px">
+      <div style="width:6px;height:6px;background:var(--filer-oracle);flex-shrink:0"></div>
+      <span style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--filer-oracle-tint)">File bound</span>
+    </div>
+    <div style="width:0.5px;height:14px;background:var(--border-dark)"></div>
+    <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest)">{{ bound_at }}</span>
+  </div>
+</nav>
+{% endblock %}
+
+{% block head_styles %}
+
+/* ── Case file document styles ─────────────────────────────────────────────── */
+
+.cf-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 56px 56px 96px;
+}
+
+/* Document header */
+.cf-header {
+  margin-bottom: 40px;
+  padding-bottom: 32px;
+  border-bottom: 0.5px solid var(--paper-border);
+}
+.cf-case-number {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-faded);
+  letter-spacing: 0.2em;
+  margin-bottom: 12px;
+}
+.cf-title {
+  font-family: var(--font-serif);
+  font-size: 34px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.15;
+  margin-bottom: 10px;
+}
+.cf-subtitle {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--ink-faded);
+  margin-bottom: 20px;
+  max-width: 640px;
+}
+.cf-stamp {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--ink-faded);
+}
+.cf-stamp-dot {
+  width: 3px;
+  height: 3px;
+  background: var(--paper-border);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Two-column layout */
+.cf-two-col {
+  display: grid;
+  grid-template-columns: 196px 1fr;
+  gap: 56px;
+  align-items: start;
+}
+
+/* Left rail */
+.cf-rail-block {
+  padding: 16px 0;
+  border-bottom: 0.5px solid var(--paper-border);
+}
+.cf-rail-block:first-child { padding-top: 0; }
+.cf-rail-block:last-child { border-bottom: none; }
+.cf-rail-label {
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--ink-faded);
+  margin-bottom: 8px;
+}
+.cf-rail-value {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: 3px;
+}
+.cf-rail-sub {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink-faded);
+  line-height: 1.5;
+}
+
+/* Main column */
+.cf-section-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-faded);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 0.5px solid var(--paper-border);
+}
+.cf-finding {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  line-height: 1.72;
+  color: var(--ink);
+  margin-bottom: 20px;
+}
+.cf-finding:last-of-type { margin-bottom: 32px; }
+
+/* Attribution panels — engineering handoff §8 */
+.filer-panel {
+  padding: 14px 18px;
+  margin-bottom: 8px;
+}
+.filer-panel:last-child { margin-bottom: 0; }
+.fp-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.fp-badge {
+  width: 22px;
+  height: 22px;
+  background: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+.fp-label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+.fp-body {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Sections TOC */
+.cf-toc-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 0.5px solid var(--paper-border);
+  text-decoration: none;
+}
+.cf-toc-row:first-child { border-top: 0.5px solid var(--paper-border); }
+.cf-toc-num {
+  font-family: var(--font-serif);
+  font-size: 11px;
+  color: var(--ink-faded);
+  min-width: 22px;
+  flex-shrink: 0;
+}
+.cf-toc-name {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  color: var(--ink);
+  flex: 1;
+}
+.cf-toc-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-faded);
+}
+
+/* Margin divider */
+.cf-divider {
+  border: none;
+  border-top: 0.5px solid var(--paper-border);
+  margin: 36px 0;
+}
+
+/* Footer */
+.cf-footer {
+  margin-top: 56px;
+  padding-top: 22px;
+  border-top: 0.5px solid var(--paper-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cf-action {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-faded);
+  text-decoration: none;
+  padding: 9px 16px;
+  border: 0.5px solid var(--paper-border);
+  transition: border-color 0.1s, color 0.1s;
+  display: inline-block;
+}
+.cf-action:hover { color: var(--ink); border-color: var(--ink-faded); }
+.cf-action-disabled {
+  color: var(--paper-border);
+  border-color: var(--paper-band);
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .cf-page { padding: 28px 18px 64px; }
+  .cf-two-col { grid-template-columns: 1fr; gap: 32px; }
+  .cf-title { font-size: 26px; }
+}
+{% endblock %}
+
+{% block content %}
+<div class="cf-page">
+
+  {# ── Document header ──────────────────────────────────────────────────── #}
+  <div class="cf-header">
+
+    <div class="cf-case-number">{{ case.case_number }} · {{ case.subject_type | upper }}</div>
+
+    <h1 class="cf-title">{{ case.name }}</h1>
+
+    <p class="cf-subtitle">
+      {% if case.description %}{{ case.description }}{% else %}A reconstruction of the record.{% endif %}
+    </p>
+
+    <div class="cf-stamp">
+      <span>Written by Oracle</span>
+      <div class="cf-stamp-dot"></div>
+      <span>Filed {{ bound_at }}</span>
+      <div class="cf-stamp-dot"></div>
+      <span>{{ case.case_number }}</span>
+    </div>
+
+  </div>
+
+  {# ── Two-column: rail + main ──────────────────────────────────────────── #}
+  <div class="cf-two-col">
+
+    {# Left rail — case metrics #}
+    <aside>
+
+      <div class="cf-rail-block">
+        <div class="cf-rail-label">Confidence</div>
+        <div class="cf-rail-value" style="font-size:18px;color:var(--ink-faded)">—</div>
+        <div class="cf-rail-sub">pending Oracle's assessment</div>
+      </div>
+
+      <div class="cf-rail-block">
+        <div class="cf-rail-label">Contradictions on record</div>
+        <div class="cf-rail-value" style="font-size:18px;color:var(--ink-faded)">—</div>
+        <div class="cf-rail-sub">none noted to date</div>
+      </div>
+
+      <div class="cf-rail-block">
+        <div class="cf-rail-label">Narrative drift</div>
+        <div class="cf-rail-value" style="font-size:18px;color:var(--ink-faded)">—</div>
+        <div class="cf-rail-sub">pending analysis</div>
+      </div>
+
+      <div class="cf-rail-block">
+        <div class="cf-rail-label">The file contains</div>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-top:6px">
+          {% if stats.sources %}
+          <div style="font-family:var(--font-serif);font-size:13px;color:var(--ink)">{{ stats.sources }} items filed</div>
+          {% endif %}
+          {% if findings %}
+          <div style="font-family:var(--font-serif);font-size:13px;color:var(--ink)">{{ findings | length }} on record</div>
+          {% endif %}
+          {% if stats.notes %}
+          <div style="font-family:var(--font-serif);font-size:13px;color:var(--ink)">{{ stats.notes }} observations</div>
+          {% endif %}
+          {% if not stats.sources and not findings and not stats.notes %}
+          <div class="cf-rail-sub">the unit has not yet convened</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="cf-rail-block">
+        <div class="cf-rail-label">Opened</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-faded);margin-top:4px">{{ case.created_at[:10] }}</div>
+      </div>
+
+      <div class="cf-rail-block" style="border-bottom:none">
+        <div class="cf-rail-label">Priority on file</div>
+        <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink);margin-top:4px">{{ case.priority }}</div>
+      </div>
+
+    </aside>
+
+    {# Main column — finding, margin note, TOC, attribution #}
+    <main>
+
+      {# The finding #}
+      <div class="cf-section-eyebrow">The finding · Oracle</div>
+
+      {# Placeholder Oracle copy — specimens from docs/02_oracle_voice_guide.md #}
+      <p class="cf-finding">
+        Between 2014 and 2017, Calderon Holdings publicly maintained three maritime logistics subsidiaries — CH-Maritime I, II, and III. By 2019, public-facing materials referenced only "the maritime division."
+      </p>
+      <p class="cf-finding">
+        The 2017 leadership change appears to coincide with — but is not directly explained by — the compression of the three subsidiaries into a single division. The unit notes the compression is documented in two independent filings; the leadership change is documented in a third.
+      </p>
+      <p class="cf-finding">
+        The discrepancy has not, to the unit's knowledge, been addressed in subsequent filings. The reader should not assume this means it was concealed; it may simply not have been asked.
+      </p>
+
+      {# Oracle margin note — gold panel, dark text per engineering handoff §8 #}
+      <div class="filer-panel" style="background:var(--filer-oracle);margin-bottom:36px">
+        <div class="fp-head">
+          <div class="fp-badge" style="color:var(--filer-oracle)">04</div>
+          <span class="fp-label" style="color:var(--ink)">Oracle · Margin note</span>
+        </div>
+        <p class="fp-body" style="color:var(--ink)">
+          The address discrepancy is the central anomaly in this file. It is the kind of detail that does not look intentional in a single source and does look intentional across three. The reader is advised to weigh it accordingly.
+        </p>
+      </div>
+
+      <hr class="cf-divider" style="margin-top:0">
+
+      {# Sections in the file — TOC #}
+      <div class="cf-section-eyebrow">Sections in the file</div>
+      <div style="margin-bottom:36px">
+        {% set sections = [
+          ("I",   "Timeline of the record",  ""),
+          ("II",  "Contradictions on file",  ""),
+          ("III", "Narrative drift",          ""),
+          ("IV",  "Items filed",              stats.sources if stats.sources else ""),
+          ("V",   "Exhibits",                 ""),
+        ] %}
+        {% for roman, title, count in sections %}
+        <div class="cf-toc-row">
+          <span class="cf-toc-num">{{ roman }}.</span>
+          <span class="cf-toc-name">{{ title }}</span>
+          <span class="cf-toc-count">{{ count if count else "—" }}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <hr class="cf-divider" style="margin-top:0">
+
+      {# Four-voice attribution — engineering handoff §8 #}
+      <div class="cf-section-eyebrow">On the file · Attributed</div>
+
+      {# Oracle — gold panel, dark ink text #}
+      <div class="filer-panel" style="background:var(--filer-oracle)">
+        <div class="fp-head">
+          <div class="fp-badge" style="color:var(--filer-oracle)">04</div>
+          <span class="fp-label" style="color:var(--ink)">Oracle · Margin note</span>
+        </div>
+        <p class="fp-body" style="color:var(--ink)">
+          Eleven entries on file. Three material to the finding. Listed in order of weight, not chronology.
+        </p>
+      </div>
+
+      {# Nexus — forest panel, cream text #}
+      <div class="filer-panel" style="background:var(--filer-nexus)">
+        <div class="fp-head">
+          <div class="fp-badge" style="color:var(--filer-nexus)">03</div>
+          <span class="fp-label" style="color:var(--paper)">Nexus · On the board</span>
+        </div>
+        <p class="fp-body" style="color:var(--paper)">
+          Nexus pinned M. Calderon to the board. Linked to 4 entities so far.
+        </p>
+      </div>
+
+      {# Ghost — slate panel, cream text #}
+      <div class="filer-panel" style="background:var(--filer-ghost)">
+        <div class="fp-head">
+          <div class="fp-badge" style="color:var(--filer-ghost)">02</div>
+          <span class="fp-label" style="color:var(--paper)">Ghost · On the recovery</span>
+        </div>
+        <p class="fp-body" style="color:var(--paper)">
+          Ghost recovered 9 archived snapshots from ICIJ leaks database.
+        </p>
+      </div>
+
+      {# Infiltrator — crimson panel, cream text #}
+      <div class="filer-panel" style="background:var(--filer-infiltrator)">
+        <div class="fp-head">
+          <div class="fp-badge" style="color:var(--filer-infiltrator)">01</div>
+          <span class="fp-label" style="color:var(--paper)">Infiltrator · In the field</span>
+        </div>
+        <p class="fp-body" style="color:var(--paper)">
+          Infiltrator entered Panama corporate registry. 1,247 candidates.
+        </p>
+      </div>
+
+    </main>
+
+  </div>{# /two-col #}
+
+  {# ── Footer — signed by Oracle ────────────────────────────────────────── #}
+  <div class="cf-footer">
+
+    <div>
+      <div style="font-family:var(--font-sans);font-size:8px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--ink-faded);margin-bottom:5px">Signed by Oracle</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-faded)">{{ bound_at }}</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px">
+      <a href="/cases/{{ case.id }}" class="cf-action">← Leave the file</a>
+      <span class="cf-action cf-action-disabled">Export ↗</span>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

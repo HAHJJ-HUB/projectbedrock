@@ -398,6 +398,7 @@
 </head>
 <body class="{% block body_class %}{% endblock %}">
 
+  {% block masthead %}
   <nav class="masthead">
     <div class="flex items-center gap-10">
       <a href="/" class="masthead-brand" style="display:flex;align-items:center;gap:14px;text-decoration:none">
@@ -422,6 +423,7 @@
       <span class="masthead-clock" id="clock"></span>
     </div>
   </nav>
+  {% endblock %}
 
   <main>
     {% block content %}{% endblock %}
