@@ -1,31 +1,63 @@
 {% extends "base.html" %}
-{% block title %}OPEN NEW CASE{% endblock %}
+{% block title %}Open case — The Casefilers{% endblock %}
+
+{% block head_styles %}
+.form-label {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--brass-faded);
+  margin-bottom: 7px;
+}
+.form-hint {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--brass-deepest);
+  margin-top: 5px;
+}
+{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
+<div class="page" style="max-width:720px;margin-left:auto;margin-right:auto">
 
-  <div class="mb-8">
-    <a href="/" class="mono text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1 mb-4">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      DASHBOARD
-    </a>
-    <h1 class="text-xl font-bold text-zinc-100 tracking-tight">Open New Case</h1>
-    <p class="text-zinc-500 text-sm mt-1">Initialise a case file. Research can be added incrementally.</p>
+  <!-- Back -->
+  <a href="/" style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-sans);font-size:10px;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;color:var(--brass-deepest);text-decoration:none;margin-bottom:32px;transition:color 0.1s"
+     onmouseover="this.style.color='var(--brass-muted)'"
+     onmouseout="this.style.color='var(--brass-deepest)'">
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <path d="M7 1.5L3 5l4 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Registry
+  </a>
+
+  <!-- Header -->
+  <div style="margin-bottom:32px">
+    <div class="eyebrow" style="margin-bottom:10px">New case file</div>
+    <h1 style="font-family:var(--font-serif);font-size:28px;font-weight:500;color:var(--bone);margin-bottom:6px">Open a case</h1>
+    <p style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:var(--brass-faded)">
+      Name the subject. The unit will gather the record.
+    </p>
   </div>
 
-  <form method="post" action="/cases/new" class="space-y-5">
+  <form method="post" action="/cases/new">
+    <div class="card" style="padding:28px;margin-bottom:16px">
 
-    <div class="p-6 space-y-5" style="background:var(--card);border:1px solid var(--border);border-radius:3px;border-top:2px solid rgba(0,170,255,0.4)">
-      <div>
-        <label class="label">Subject / Target Name</label>
-        <input type="text" name="name" class="input" placeholder="e.g. Project MKUltra, Cold Fusion Research, ..." required autofocus>
-        <p class="text-zinc-600 text-xs mt-1.5 mono">This becomes the primary search query for all research runs.</p>
+      <!-- Subject name -->
+      <div style="margin-bottom:22px">
+        <label class="form-label" for="name">Subject name</label>
+        <input type="text" name="name" id="name" class="input"
+               placeholder="e.g. Operation Paperclip, Enron Corporation, ..."
+               required autofocus>
+        <p class="form-hint">This becomes the primary query for all research runs.</p>
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
+      <!-- Subject type + Priority -->
+      <div class="grid grid-2 gap-4" style="margin-bottom:22px">
         <div>
-          <label class="label">Subject Type</label>
-          <select name="subject_type" class="select">
+          <label class="form-label" for="subject_type">Subject type</label>
+          <select name="subject_type" id="subject_type" class="select">
             <option value="topic">Topic</option>
             <option value="person">Person</option>
             <option value="organization">Organization</option>
@@ -36,8 +68,8 @@
           </select>
         </div>
         <div>
-          <label class="label">Priority</label>
-          <select name="priority" class="select">
+          <label class="form-label" for="priority">Priority</label>
+          <select name="priority" id="priority" class="select">
             <option value="low">Low</option>
             <option value="medium" selected>Medium</option>
             <option value="high">High</option>
@@ -46,27 +78,31 @@
         </div>
       </div>
 
-      <div>
-        <label class="label">Description / Brief</label>
-        <textarea name="description" class="input" placeholder="What are you investigating? What do you already know? Any specific angles to pursue?"></textarea>
+      <!-- Brief -->
+      <div style="margin-bottom:22px">
+        <label class="form-label" for="description">Brief</label>
+        <textarea name="description" id="description" class="input" rows="3"
+                  placeholder="What are you investigating? Any specific angles or time periods to pursue?"></textarea>
       </div>
 
+      <!-- Tags -->
       <div>
-        <label class="label">Tags <span class="text-zinc-700">(comma-separated)</span></label>
-        <input type="text" name="tags" class="input" placeholder="e.g. government, declassified, 1970s">
+        <label class="form-label" for="tags">Tags <span style="letter-spacing:0;text-transform:none;font-weight:400;color:var(--brass-deepest)">(comma-separated, optional)</span></label>
+        <input type="text" name="tags" id="tags" class="input"
+               placeholder="e.g. government, declassified, 1970s">
       </div>
     </div>
 
     <div class="flex items-center justify-between">
       <a href="/" class="btn btn-ghost">Cancel</a>
-      <button type="submit" class="btn btn-green">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <button type="submit" class="btn btn-primary">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
         </svg>
-        Open Case File
+        Open case file
       </button>
     </div>
-
   </form>
+
 </div>
 {% endblock %}

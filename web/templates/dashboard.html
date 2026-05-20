@@ -1,176 +1,164 @@
 {% extends "base.html" %}
-{% block title %}BEDROCK — DASHBOARD{% endblock %}
+{% block title %}Registry — The Casefilers{% endblock %}
 
-{% block head %}
-<style>
-  /* Priority color left borders on case cards */
-  .priority-critical { border-left: 2px solid #ef4444; }
-  .priority-high     { border-left: 2px solid #f59e0b; }
-  .priority-medium   { border-left: 2px solid #60a5fa; }
-  .priority-low      { border-left: 2px solid #3f3f6a; }
+{% block head_styles %}
+.case-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--wood-mid);
+  border: 0.5px solid var(--border-dark);
+  text-decoration: none;
+  transition: background 0.1s;
+}
+.case-row:hover { background: #1e1b17; }
+.case-row + .case-row { border-top: none; }
 
-  /* Subject type color chips */
-  .chip {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; font-weight: 700;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    padding: 2px 7px; border-radius: 2px;
-    background: rgba(255,255,255,0.04);
-    color: #6b6b9a;
-    border: 1px solid var(--border);
-  }
+.pri-critical { border-left: 2px solid var(--filer-infiltrator); }
+.pri-high     { border-left: 2px solid var(--amber); }
+.pri-medium   { border-left: 2px solid var(--brass-deepest); }
+.pri-low      { border-left: 2px solid var(--border-dark); }
 
-  /* Metric card hover glow by color */
-  .metric-green:hover { box-shadow: 0 0 20px rgba(0,255,65,0.08); }
-  .metric-blue:hover  { box-shadow: 0 0 20px rgba(0,170,255,0.08); }
-  .metric-violet:hover{ box-shadow: 0 0 20px rgba(153,102,255,0.08); }
-  .metric-teal:hover  { box-shadow: 0 0 20px rgba(0,221,170,0.08); }
-</style>
+.filter-tab {
+  display: block;
+  padding: 8px 20px;
+  font-family: var(--font-sans);
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -0.5px;
+  color: var(--brass-deepest);
+  transition: color 0.1s, border-color 0.1s;
+}
+.filter-tab.active { color: var(--brass); border-color: var(--brass); }
+.filter-tab:hover  { color: var(--brass-muted); }
+
+.subject-chip {
+  font-family: var(--font-sans);
+  font-size: 9px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 2px 7px;
+  border: 0.5px solid var(--border-dark);
+  color: var(--brass-deepest);
+  flex-shrink: 0;
+}
 {% endblock %}
 
 {% block content %}
+<div class="page">
 
-<!-- ── Dashboard header ───────────────────────────────────────────────────── -->
-<div class="flex items-start justify-between mb-7">
-  <div>
-    <div class="flex items-center gap-3 mb-1">
-      <span class="mono text-zinc-700 tracking-widest" style="font-size:9px">INTELLIGENCE MANAGEMENT SYSTEM</span>
-      <span class="classified-stamp">UNCLASSIFIED</span>
-    </div>
-    <h1 class="text-2xl font-bold text-zinc-100 tracking-tight">Case File Dashboard</h1>
-    <p class="text-zinc-600 text-xs mono mt-1">
-      {{ counts.total }} total &nbsp;·&nbsp; {{ counts.active }} active &nbsp;·&nbsp;
-      {{ counts.closed }} closed
+  <!-- Briefing room header -->
+  <div style="margin-bottom:36px">
+    <div class="eyebrow" style="margin-bottom:10px">Intelligence management system</div>
+    <h1 style="font-family:var(--font-serif);font-size:30px;font-weight:500;color:var(--bone);margin-bottom:6px">
+      Case file registry
+    </h1>
+    <p style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:var(--brass-faded)">
+      {{ counts.total }} cases on file &middot; {{ counts.active }} active
     </p>
   </div>
-  <a href="/cases/new" class="btn btn-green">
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-      <path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    </svg>
-    Open Case
-  </a>
-</div>
 
-<!-- ── System metrics bar ─────────────────────────────────────────────────── -->
-<div class="grid grid-cols-4 gap-3 mb-7">
-  {% for label, val, color, cls, icon in [
-    ("Total Cases",   counts.total,    "var(--c-phantom)", "metric-green",  "⬡"),
-    ("Active Cases",  counts.active,   "var(--c-spectre)", "metric-blue",   "◈"),
-    ("Closed",        counts.closed,   "var(--c-cortex)",  "metric-violet", "⬟"),
-    ("Archived",      counts.archived, "var(--c-axiom)",   "metric-teal",   "◉"),
-  ] %}
-  <div class="card {{ cls }} p-4 relative bracket-tl bracket-br transition-all" style="border-left:2px solid {{ color }}20;">
-    <div class="flex items-center justify-between mb-2">
-      <span class="label mb-0">{{ label }}</span>
-      <span class="mono text-sm" style="color:{{ color }}; opacity:0.5">{{ icon }}</span>
+  <!-- Metrics row -->
+  <div class="grid grid-4 gap-3" style="margin-bottom:36px">
+    {% for label, val, color in [
+      ("Total cases", counts.total,    "var(--brass)"),
+      ("Active",      counts.active,   "var(--ops-green)"),
+      ("Closed",      counts.closed,   "var(--brass-faded)"),
+      ("Archived",    counts.archived, "var(--brass-deepest)"),
+    ] %}
+    <div class="card" style="padding:20px 24px">
+      <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--brass-deepest);margin-bottom:10px">{{ label }}</div>
+      <div style="font-family:var(--font-serif);font-size:28px;font-weight:500;color:{{ color }}">{{ val }}</div>
     </div>
-    <div class="mono font-bold text-2xl" style="color:{{ color }}">{{ val }}</div>
+    {% endfor %}
   </div>
-  {% endfor %}
-</div>
 
-<!-- ── Agent status panels ────────────────────────────────────────────────── -->
-<div class="grid grid-cols-4 gap-3 mb-7">
-  {% for name, role, color, cls, dot_cls, desc in [
-    ("Infiltrator", "Deep Penetration", "var(--c-phantom)", "card-phantom", "agent-dot-phantom",
-     "Dorks · Paste sweeps · Archive excavation · Forum archaeology"),
-    ("Ghost",       "Extraction Ops",   "var(--c-spectre)", "card-spectre", "agent-dot-spectre",
-     "Page extraction · Wayback fetch · PDF parse · Feed consumption"),
-    ("Nexus",       "Pattern Analysis", "var(--c-cortex)",  "card-cortex",  "agent-dot-cortex",
-     "Narrative forensics · Entity mapping · Contradiction detection"),
-    ("Oracle",      "Final Reporting",  "var(--c-axiom)",   "card-axiom",   "agent-dot-axiom",
-     "Intelligence synthesis · Confidence assessment · Cited reports"),
-  ] %}
-  <div class="card {{ cls }} p-4 relative">
-    <div class="flex items-center justify-between mb-2">
-      <span class="mono font-bold text-sm" style="color:{{ color }}">{{ name }}</span>
-      <div class="agent-dot {{ dot_cls }}" style="width:6px;height:6px"></div>
+  <!-- Filer roster -->
+  <div class="grid grid-4 gap-3" style="margin-bottom:36px">
+    {% for num, name, filer, role in [
+      ("01", "Infiltrator", "infiltrator", "In the field"),
+      ("02", "Ghost",       "ghost",       "On the recovery"),
+      ("03", "Nexus",       "nexus",       "At the board"),
+      ("04", "Oracle",      "oracle",      "At her desk"),
+    ] %}
+    <div class="card card-filer-{{ filer }}" style="padding:16px 18px">
+      <div class="flex items-center gap-3" style="margin-bottom:8px">
+        <div class="badge badge-{{ filer }}">{{ num }}</div>
+        <span style="font-family:var(--font-sans);font-size:13px;font-weight:500;color:var(--bone)">{{ name }}</span>
+      </div>
+      <div style="font-family:var(--font-serif);font-style:italic;font-size:12px;color:var(--brass-faded)">{{ role }}</div>
     </div>
-    <div class="mono text-zinc-500 text-xs mb-1">{{ role }}</div>
-    <div class="text-zinc-700 text-xs leading-relaxed" style="font-size:10px">{{ desc }}</div>
+    {% endfor %}
   </div>
-  {% endfor %}
-</div>
 
-<!-- ── Filter tabs ────────────────────────────────────────────────────────── -->
-<div class="flex items-center gap-0 mb-5" style="border-bottom:1px solid var(--border)">
-  {% for label, val, count in [
-    ("All Cases", "", counts.total),
-    ("Active",    "active",   counts.active),
-    ("Closed",    "closed",   counts.closed),
-    ("Archived",  "archived", counts.archived),
-  ] %}
-  <a href="/?status={{ val }}"
-     class="px-5 py-2 mono text-xs tracking-wide border-b-2 transition-colors -mb-px"
-     style="{% if active_filter == val %}
-              border-color:var(--c-spectre); color:var(--c-spectre);
-            {% else %}
-              border-color:transparent; color:#52527a;
-            {% endif %}">
-    {{ label }}
-    <span class="ml-1" style="color:#3f3f5a">({{ count }})</span>
-  </a>
-  {% endfor %}
-</div>
+  <!-- Filter bar -->
+  <div class="flex items-end justify-between" style="border-bottom:0.5px solid var(--border-dark);margin-bottom:20px">
+    <div class="flex items-center">
+      {% for label, val, count in [
+        ("All cases", "",         counts.total),
+        ("Active",    "active",   counts.active),
+        ("Closed",    "closed",   counts.closed),
+        ("Archived",  "archived", counts.archived),
+      ] %}
+      <a href="/?status={{ val }}"
+         class="filter-tab {% if active_filter == val %}active{% endif %}">
+        {{ label }}<span style="color:var(--border-dark);margin-left:5px">({{ count }})</span>
+      </a>
+      {% endfor %}
+    </div>
+    <div style="padding-bottom:12px">
+      <a href="/cases/new" class="btn btn-primary">+ Open case</a>
+    </div>
+  </div>
 
-{% if not cases %}
-<!-- Empty state -->
-<div class="card p-16 text-center" style="border-style:dashed">
-  <div class="mono text-zinc-700 text-xs tracking-widest mb-3">NO CASES ON FILE</div>
-  <p class="text-zinc-600 text-sm mb-6">Open a case to begin intelligence gathering</p>
-  <a href="/cases/new" class="btn btn-green">Initiate First Case</a>
-</div>
+  <!-- Case list -->
+  {% if not cases %}
+  <div class="card" style="padding:64px;text-align:center">
+    <div class="eyebrow" style="margin-bottom:12px">No cases on file</div>
+    <p style="font-family:var(--font-serif);font-style:italic;font-size:15px;color:var(--brass-faded);margin-bottom:24px">
+      Open a case to begin intelligence gathering.
+    </p>
+    <a href="/cases/new" class="btn btn-primary">Open first case</a>
+  </div>
 
-{% else %}
+  {% else %}
+  <div style="display:flex;flex-direction:column">
+    {% for case in cases %}
+    <a href="/cases/{{ case.id }}"
+       class="case-row pri-{{ case.priority }}">
 
-<!-- ── Case list ──────────────────────────────────────────────────────────── -->
-<div class="space-y-2">
-  {% for case in cases %}
-  <a href="/cases/{{ case.id }}"
-     class="card card-glow priority-{{ case.priority }} flex items-start justify-between p-4 group block relative transition-all">
-
-    <!-- Hex corner -->
-    <div class="hex-corner"></div>
-
-    <div class="flex items-start gap-4 flex-1 min-w-0">
       <!-- Case number -->
-      <div class="flex-shrink-0 w-24">
-        <span class="mono font-bold text-xs glow-amber">{{ case.case_number }}</span>
+      <div style="flex-shrink:0;width:88px">
+        <span style="font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--brass);letter-spacing:0.06em">{{ case.case_number }}</span>
       </div>
 
-      <!-- Main -->
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2 mb-1">
-          <h2 class="font-semibold text-zinc-200 text-sm truncate group-hover:text-white transition-colors">
-            {{ case.name }}
-          </h2>
-          <span class="chip flex-shrink-0">{{ case.subject_type }}</span>
+      <!-- Name + chip + description -->
+      <div class="flex-1 min-w-0" style="padding:0 20px">
+        <div class="flex items-center gap-2" style="margin-bottom:3px">
+          <span style="font-family:var(--font-sans);font-size:13px;font-weight:500;color:var(--bone-body)">{{ case.name }}</span>
+          <span class="subject-chip">{{ case.subject_type }}</span>
+          {% if case.tags %}{% for tag in case.tags %}
+          <span class="subject-chip" style="font-size:8px">{{ tag }}</span>
+          {% endfor %}{% endif %}
         </div>
         {% if case.description %}
-        <p class="text-zinc-600 text-xs truncate max-w-xl">{{ case.description }}</p>
-        {% endif %}
-        {% if case.tags %}
-        <div class="flex items-center gap-1 mt-1.5">
-          {% for tag in case.tags %}
-          <span class="chip" style="font-size:8px">{{ tag }}</span>
-          {% endfor %}
-        </div>
+        <p class="truncate" style="font-family:var(--font-serif);font-style:italic;font-size:12px;color:var(--brass-faded);max-width:520px">{{ case.description }}</p>
         {% endif %}
       </div>
-    </div>
 
-    <!-- Meta right -->
-    <div class="flex items-center gap-3 flex-shrink-0 ml-4">
-      <span class="badge badge-{{ case.priority }}">{{ case.priority }}</span>
-      <span class="badge badge-{{ case.status }}">{{ case.status }}</span>
-      <span class="mono text-xs text-zinc-700">{{ case.updated_at[:10] }}</span>
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="text-zinc-700 group-hover:text-zinc-400 transition-colors">
-        <path d="M4.5 2l4 4.5-4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </div>
-  </a>
-  {% endfor %}
+      <!-- Status + priority + date -->
+      <div class="flex items-center gap-3" style="flex-shrink:0">
+        <span class="status-pill status-{{ case.priority }}">{{ case.priority }}</span>
+        <span class="status-pill status-{{ case.status }}">{{ case.status }}</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest);min-width:80px;text-align:right">{{ case.updated_at[:10] }}</span>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="color:var(--brass-deepest);flex-shrink:0">
+          <path d="M3.5 1.5L7 5l-3.5 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
 </div>
-{% endif %}
-
 {% endblock %}
