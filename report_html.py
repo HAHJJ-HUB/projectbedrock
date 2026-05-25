@@ -1,5 +1,5 @@
 """
-Convert output/report.md to a styled, self-contained HTML intelligence report.
+Convert output/report.md to a styled, self-contained case file HTML document.
 
 Usage:
     python report_html.py                      # reads output/report.md
@@ -15,6 +15,70 @@ from datetime import datetime
 from pathlib import Path
 
 
+# ── Oracle output section parser ──────────────────────────────────────────────
+
+_SECTION_HEADERS = [
+    ("finding",     re.compile(r"^(?:#{1,4} +)?THE FINDING *$", re.I | re.M)),
+    ("margin_note", re.compile(r"^(?:#{1,4} +)?THE MARGIN NOTE *$", re.I | re.M)),
+    ("section_i",   re.compile(
+        r"^(?:#{1,4} +)?SECTION (?:I|1) *[—–\-:]+ *THE RECORD *$"
+        r"|^(?:#{1,4} +)?I\. *THE RECORD *$", re.I | re.M)),
+    ("section_ii",  re.compile(
+        r"^(?:#{1,4} +)?SECTION (?:II|2) *[—–\-:]+ *THE TIMELINE *$"
+        r"|^(?:#{1,4} +)?II\. *THE TIMELINE *$", re.I | re.M)),
+    ("section_iii", re.compile(
+        r"^(?:#{1,4} +)?SECTION (?:III|3) *[—–\-:]+ *CONTRADICT", re.I | re.M)),
+    ("section_iv",  re.compile(
+        r"^(?:#{1,4} +)?SECTION (?:IV|4) *[—–\-:]+ *NARRATIVE DRIFT *$"
+        r"|^(?:#{1,4} +)?IV\. *NARRATIVE DRIFT *$", re.I | re.M)),
+    ("section_v",   re.compile(
+        r"^(?:#{1,4} +)?SECTION (?:V|5) *[—–\-:]+ *THE SOURCE INVENTORY *$"
+        r"|^(?:#{1,4} +)?V\. *THE SOURCE INVENTORY *$", re.I | re.M)),
+    ("section_vi",  re.compile(
+        r"^(?:#{1,4} +)?SECTION (?:VI|6) *[—–\-:]+ *(?:THE )?EXHIBITS *$"
+        r"|^(?:#{1,4} +)?VI\. *(?:THE )?EXHIBITS *$", re.I | re.M)),
+    ("attribution", re.compile(r"^(?:#{1,4} +)?ATTRIBUTION LINES? *$", re.I | re.M)),
+    ("confidence",  re.compile(r"^(?:#{1,4} +)?CONFIDENCE *$", re.I | re.M)),
+    ("signature",   re.compile(
+        r"^(?:#{1,4} +)?ORACLE(?:'S)? SIGNATURE *$"
+        r"|^(?:#{1,4} +)?SIGNED BY ORACLE *$", re.I | re.M)),
+]
+
+_SECTION_KEYS = [k for k, _ in _SECTION_HEADERS]
+
+
+def _parse_oracle_output(md: str) -> dict:
+    """
+    Parse Oracle's structured markdown output into named sections.
+    Tolerates ## / plain-text headers, Roman / Arabic numerals,
+    em-dash / en-dash / hyphen separators, and mixed case.
+    Missing sections have empty-string values.
+    """
+    result = {k: "" for k in _SECTION_KEYS}
+    hits = []
+    for key, pattern in _SECTION_HEADERS:
+        for m in pattern.finditer(md):
+            hits.append((m.start(), m.end(), key))
+    hits.sort(key=lambda x: x[0])
+    for idx, (start, end, key) in enumerate(hits):
+        next_start = hits[idx + 1][0] if idx + 1 < len(hits) else len(md)
+        result[key] = md[end:next_start].strip()
+    return result
+
+
+def _finding_paragraphs(finding_text: str) -> list:
+    """Split THE FINDING block into up to three paragraphs; strip stray headers."""
+    if not finding_text:
+        return []
+    paras = [re.sub(r"^#+\s+", "", p.strip()) for p in re.split(r"\n\n+", finding_text)]
+    return [p for p in paras if p][:3]
+
+
+def _confidence_level(confidence_text: str) -> str:
+    m = re.search(r"\b(High|Medium|Low)\b", confidence_text, re.I)
+    return m.group(1).capitalize() if m else "—"
+
+
 # ── Minimal Markdown → HTML ────────────────────────────────────────────────────
 
 def _md_to_html(md: str) -> str:
@@ -25,7 +89,7 @@ def _md_to_html(md: str) -> str:
     in_ul = False
     in_ol = False
     in_blockquote = False
-    toc_entries: list[tuple[int, str, str]] = []  # (level, anchor, title)
+    toc_entries: list = []  # (level, anchor, title)
 
     def close_lists():
         nonlocal in_ul, in_ol
@@ -44,25 +108,18 @@ def _md_to_html(md: str) -> str:
 
     def inline(text: str) -> str:
         """Process inline formatting."""
-        # Escape HTML first
         text = html.escape(text, quote=False)
-        # Bold+italic
         text = re.sub(r"\*\*\*(.+?)\*\*\*", r"<strong><em>\1</em></strong>", text)
-        # Bold
         text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
         text = re.sub(r"__(.+?)__", r"<strong>\1</strong>", text)
-        # Italic
         text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
         text = re.sub(r"_(.+?)_", r"<em>\1</em>", text)
-        # Inline code
         text = re.sub(r"`(.+?)`", r"<code>\1</code>", text)
-        # Links
         text = re.sub(
             r"\[(.+?)\]\((https?://[^\)]+)\)",
             r'<a href="\2" target="_blank" rel="noopener">\1</a>',
             text,
         )
-        # Bare URLs
         text = re.sub(
             r"(?<![\"'])(https?://[^\s<>\"']+)",
             r'<a href="\1" target="_blank" rel="noopener">\1</a>',
@@ -78,7 +135,6 @@ def _md_to_html(md: str) -> str:
     while i < len(lines):
         line = lines[i]
 
-        # Fenced code block
         if line.startswith("```"):
             close_lists()
             close_bq()
@@ -98,7 +154,6 @@ def _md_to_html(md: str) -> str:
             i += 1
             continue
 
-        # Horizontal rule
         if re.match(r"^[-*_]{3,}\s*$", line):
             close_lists()
             close_bq()
@@ -106,7 +161,6 @@ def _md_to_html(md: str) -> str:
             i += 1
             continue
 
-        # Headings
         m = re.match(r"^(#{1,6})\s+(.+)$", line)
         if m:
             close_lists()
@@ -123,7 +177,6 @@ def _md_to_html(md: str) -> str:
             i += 1
             continue
 
-        # Blockquote
         if line.startswith("> "):
             close_lists()
             if not in_blockquote:
@@ -135,7 +188,6 @@ def _md_to_html(md: str) -> str:
         else:
             close_bq()
 
-        # Unordered list
         m = re.match(r"^[-*+]\s+(.+)$", line)
         if m:
             if in_ol:
@@ -148,7 +200,6 @@ def _md_to_html(md: str) -> str:
             i += 1
             continue
 
-        # Ordered list
         m = re.match(r"^\d+\.\s+(.+)$", line)
         if m:
             if in_ul:
@@ -161,7 +212,6 @@ def _md_to_html(md: str) -> str:
             i += 1
             continue
 
-        # Blank line — close lists
         if not line.strip():
             close_lists()
             close_bq()
@@ -169,7 +219,6 @@ def _md_to_html(md: str) -> str:
             i += 1
             continue
 
-        # Normal paragraph
         close_lists()
         close_bq()
         out.append(f"<p>{inline(line)}</p>")
@@ -183,7 +232,7 @@ def _md_to_html(md: str) -> str:
     return "\n".join(out), toc_entries
 
 
-def _build_toc(entries: list[tuple[int, str, str]]) -> str:
+def _build_toc(entries: list) -> str:
     if not entries:
         return ""
     items = []
@@ -226,7 +275,6 @@ body {
   min-height: 100vh;
 }
 
-/* Scanline overlay */
 body::before {
   content: '';
   position: fixed;
@@ -242,7 +290,6 @@ body::before {
   z-index: 9999;
 }
 
-/* ── Sidebar ── */
 #sidebar {
   width: 240px;
   min-width: 240px;
@@ -284,14 +331,8 @@ body::before {
   margin-bottom: 8px;
 }
 
-#sidebar ul {
-  list-style: none;
-  padding: 0;
-}
-
-#sidebar li {
-  line-height: 1.4;
-}
+#sidebar ul { list-style: none; padding: 0; }
+#sidebar li { line-height: 1.4; }
 
 #sidebar a {
   display: block;
@@ -312,7 +353,6 @@ body::before {
 #sidebar li li a { padding-left: 16px; font-size: 11px; }
 #sidebar li li li a { padding-left: 24px; font-size: 10px; }
 
-/* ── Main content ── */
 #content {
   flex: 1;
   max-width: 820px;
@@ -320,7 +360,6 @@ body::before {
   overflow-x: hidden;
 }
 
-/* ── Report header ── */
 .report-header {
   border-bottom: 1px solid var(--border);
   padding-bottom: 32px;
@@ -368,7 +407,6 @@ body::before {
   font-style: italic;
 }
 
-/* ── Headings ── */
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Inter', sans-serif;
   color: var(--zinc-100);
@@ -385,7 +423,6 @@ h4 { font-size: 13px; color: var(--zinc-400); }
 
 h1:first-child, h2:first-child { margin-top: 0; }
 
-/* Anchor links */
 a.anchor {
   font-size: 11px;
   color: var(--zinc-700);
@@ -396,25 +433,14 @@ a.anchor {
 }
 h1:hover a.anchor, h2:hover a.anchor, h3:hover a.anchor { opacity: 1; }
 
-/* ── Body text ── */
-p {
-  color: var(--zinc-400);
-  margin-bottom: 14px;
-}
-
+p { color: var(--zinc-400); margin-bottom: 14px; }
 strong { color: var(--zinc-200); font-weight: 600; }
 em { color: var(--zinc-500); font-style: italic; }
 
-a {
-  color: var(--amber);
-  text-decoration: none;
-}
+a { color: var(--amber); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* ── Lists ── */
-ul.findings-list, ol.findings-list {
-  margin: 8px 0 16px 20px;
-}
+ul.findings-list, ol.findings-list { margin: 8px 0 16px 20px; }
 ul.findings-list li, ol.findings-list li {
   color: var(--zinc-400);
   margin-bottom: 6px;
@@ -423,7 +449,6 @@ ul.findings-list li, ol.findings-list li {
 ul.findings-list li::marker { color: var(--amber); }
 ol.findings-list li::marker { color: var(--amber); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
 
-/* ── Code ── */
 code {
   font-family: 'JetBrains Mono', 'Courier New', monospace;
   font-size: 12px;
@@ -441,13 +466,8 @@ pre {
   overflow-x: auto;
   margin: 16px 0;
 }
-pre code {
-  background: none;
-  color: var(--zinc-400);
-  padding: 0;
-}
+pre code { background: none; color: var(--zinc-400); padding: 0; }
 
-/* ── Blockquote ── */
 blockquote {
   border-left: 2px solid var(--amber);
   margin: 16px 0;
@@ -456,14 +476,8 @@ blockquote {
 }
 blockquote p { color: var(--zinc-500); margin: 0; font-style: italic; }
 
-/* ── Divider ── */
-hr.divider {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 32px 0;
-}
+hr.divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
 
-/* ── Stats bar ── */
 .stats-bar {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -490,18 +504,11 @@ hr.divider {
   font-weight: 700;
 }
 
-/* ── Confidence labels ── */
 .confirmed { color: var(--green); }
 .reported  { color: var(--amber); }
 .inferred  { color: var(--violet); }
 
-/* ── Source table ── */
-.source-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  margin: 16px 0;
-}
+.source-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 16px 0; }
 .source-table th {
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
@@ -521,13 +528,11 @@ hr.divider {
 .source-table tr:hover td { background: rgba(255,255,255,0.02); }
 .source-table td:first-child { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
 
-/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--zinc-700); }
 
-/* ── Print ── */
 @media print {
   body::before { display: none; }
   #sidebar { display: none; }
@@ -552,8 +557,8 @@ _HTML_TEMPLATE = """<!DOCTYPE html>
 <body>
 
 <aside id="sidebar">
-  <div class="brand">Project Bedrock</div>
-  <div class="brand-sub">Intelligence Report</div>
+  <div class="brand">The Casefilers</div>
+  <div class="brand-sub">Case File</div>
   <div class="toc-label">Contents</div>
   {toc}
 </aside>
@@ -561,9 +566,9 @@ _HTML_TEMPLATE = """<!DOCTYPE html>
 <main id="content">
 
   <div class="report-header">
-    <div class="stamp">Intelligence File</div>
+    <div class="stamp">Signed by Oracle</div>
     <div class="report-meta">
-      Generated {generated} &nbsp;·&nbsp; Project Bedrock
+      Bound {bound_at} &nbsp;&middot;&nbsp; The Casefilers
     </div>
     <div class="report-title">{display_title}</div>
     {scope_line}
@@ -576,7 +581,6 @@ _HTML_TEMPLATE = """<!DOCTYPE html>
 </main>
 
 <script>
-// Highlight active TOC link on scroll
 const headings = document.querySelectorAll('h1[id],h2[id],h3[id],h4[id]');
 const links = document.querySelectorAll('#sidebar a');
 const obs = new IntersectionObserver(entries => {{
@@ -590,7 +594,6 @@ const obs = new IntersectionObserver(entries => {{
 }}, {{ rootMargin: '-20% 0px -70% 0px' }});
 headings.forEach(h => obs.observe(h));
 
-// Style CONFIRMED/REPORTED/INFERRED labels
 document.querySelectorAll('p, li').forEach(el => {{
   el.innerHTML = el.innerHTML
     .replace(/\\bCONFIRMED\\b/g, '<span class="confirmed">CONFIRMED</span>')
@@ -603,43 +606,35 @@ document.querySelectorAll('p, li').forEach(el => {{
 """
 
 
-# ── Main converter ─────────────────────────────────────────────────────────────
+# ── Stats extraction ───────────────────────────────────────────────────────────
 
-def _extract_stats(md: str) -> dict:
-    """Best-effort extract stats from the Markdown report."""
-    stats = {"sources": "—", "findings": "—", "confidence": "—", "generated": "—"}
+def _extract_stats(md: str, parsed: dict) -> dict:
+    """Extract display stats from Oracle's case file output."""
+    stats = {"sources": "—", "sections": "—", "confidence": "—", "bound_at": "—"}
 
-    # Generated date
-    m = re.search(r"Generated[:\s]+([^\|]+)", md, re.IGNORECASE)
-    if m:
-        stats["generated"] = m.group(1).strip()
+    urls = re.findall(r"https?://\S+", md)
+    stats["sources"] = str(len(set(urls))) if urls else "—"
 
-    # Sources count — look for "Sources: N" or table rows
-    m = re.search(r"Sources[:\s]+(\d+)", md, re.IGNORECASE)
-    if m:
-        stats["sources"] = m.group(1)
-    else:
-        urls = re.findall(r"https?://\S+", md)
-        stats["sources"] = str(len(set(urls))) if urls else "—"
+    body_keys = ["section_i", "section_ii", "section_iii", "section_iv", "section_v", "section_vi"]
+    n = sum(1 for k in body_keys if parsed.get(k, "").strip())
+    stats["sections"] = str(n) if n else "—"
 
-    # Findings count — count ## sections
-    findings = re.findall(r"^##\s+", md, re.MULTILINE)
-    stats["findings"] = str(len(findings)) if findings else "—"
+    if parsed.get("confidence"):
+        stats["confidence"] = _confidence_level(parsed["confidence"])
 
-    # Confidence
-    m = re.search(r"Confidence[:\s]+([A-Za-z/\s]+)", md, re.IGNORECASE)
-    if m:
-        stats["confidence"] = m.group(1).strip()[:20]
+    sig = parsed.get("signature", "").strip()
+    if sig:
+        stats["bound_at"] = sig[:30]
 
     return stats
 
 
-def _build_stats_bar(stats: dict, generated: str) -> str:
+def _build_stats_bar(stats: dict, bound_at: str) -> str:
     items = [
-        ("SOURCES",    stats["sources"],    "var(--green)"),
-        ("FINDINGS",   stats["findings"],   "var(--amber)"),
-        ("CONFIDENCE", stats["confidence"], "var(--violet)"),
-        ("GENERATED",  generated[:10] if generated else "—", "var(--blue)"),
+        ("ITEMS FILED", stats["sources"],    "var(--green)"),
+        ("SECTIONS",    stats["sections"],   "var(--amber)"),
+        ("CONFIDENCE",  stats["confidence"], "var(--violet)"),
+        ("BOUND",       bound_at[:10] if bound_at and bound_at != "—" else "—", "var(--blue)"),
     ]
     cards = ""
     for label, val, color in items:
@@ -652,25 +647,26 @@ def _build_stats_bar(stats: dict, generated: str) -> str:
     return f'<div class="stats-bar">{cards}</div>'
 
 
+# ── Main converter ─────────────────────────────────────────────────────────────
+
 def convert(md_path: Path, html_path: Path, topic: str = "", scope: str = "") -> None:
     md = md_path.read_text(encoding="utf-8")
 
-    # Strip YAML front-matter if present
     if md.startswith("---"):
         end = md.find("---", 3)
         if end != -1:
             md = md[end + 3:].lstrip()
 
+    parsed = _parse_oracle_output(md)
     body_html, toc_entries = _md_to_html(md)
     toc_html = _build_toc(toc_entries)
 
-    # Extract display title from first H1 or use topic
     m = re.search(r"^#\s+(.+)$", md, re.MULTILINE)
     display_title = m.group(1) if m else (topic or md_path.stem)
 
-    generated = datetime.now().strftime("%Y-%m-%d %H:%M")
-    stats = _extract_stats(md)
-    stats_bar = _build_stats_bar(stats, generated)
+    bound_at = datetime.now().strftime("%Y-%m-%d %H:%M")
+    stats = _extract_stats(md, parsed)
+    stats_bar = _build_stats_bar(stats, bound_at)
 
     scope_line = (
         f'<div class="report-scope">{html.escape(scope)}</div>' if scope else ""
@@ -680,7 +676,7 @@ def convert(md_path: Path, html_path: Path, topic: str = "", scope: str = "") ->
         title=html.escape(display_title),
         css=_CSS,
         toc=toc_html,
-        generated=html.escape(generated),
+        bound_at=html.escape(bound_at),
         display_title=html.escape(display_title),
         scope_line=scope_line,
         stats_bar=stats_bar,
@@ -689,13 +685,13 @@ def convert(md_path: Path, html_path: Path, topic: str = "", scope: str = "") ->
 
     html_path.parent.mkdir(parents=True, exist_ok=True)
     html_path.write_text(rendered, encoding="utf-8")
-    print(f"HTML report written to: {html_path.absolute()}")
+    print(f"Case file written to: {html_path.absolute()}")
     kb = html_path.stat().st_size / 1024
-    print(f"Report size: {kb:.1f} KB")
+    print(f"File size: {kb:.1f} KB")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Convert report.md to styled HTML")
+    parser = argparse.ArgumentParser(description="Convert case file markdown to styled HTML")
     parser.add_argument("input", nargs="?", default="output/report.md")
     parser.add_argument("--out", default="")
     parser.add_argument("--topic", default="")
