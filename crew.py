@@ -204,14 +204,6 @@ def build_crew(
         tasks=[task_discover, task_extract, task_analyze, task_report],
         process=Process.sequential,
         verbose=True,
-        memory=True,
-        embedder={
-            "provider": "anthropic",
-            "config": {
-                "model": "voyage-3",
-                "api_key": ANTHROPIC_API_KEY,
-            },
-        },
         output_log_file="output/crew_log.txt",
     )
     if step_callback is not None:
