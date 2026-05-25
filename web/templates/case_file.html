@@ -294,8 +294,14 @@
 
       <div class="cf-rail-block">
         <div class="cf-rail-label">Confidence</div>
-        <div class="cf-rail-value" style="font-size:18px;color:var(--ink-faded)">—</div>
+        <div class="cf-rail-value" style="font-size:18px;color:{% if confidence_level %}var(--ink){% else %}var(--ink-faded){% endif %}">
+          {{ confidence_level if confidence_level else "—" }}
+        </div>
+        {% if confidence_level and confidence_reason %}
+        <div class="cf-rail-sub">{{ confidence_reason[:90] }}</div>
+        {% else %}
         <div class="cf-rail-sub">pending Oracle's assessment</div>
+        {% endif %}
       </div>
 
       <div class="cf-rail-block">
@@ -346,16 +352,18 @@
       {# The finding #}
       <div class="cf-section-eyebrow">The finding · Oracle</div>
 
-      {# Placeholder Oracle copy — specimens from docs/02_oracle_voice_guide.md #}
-      <p class="cf-finding">
-        Between 2014 and 2017, Calderon Holdings publicly maintained three maritime logistics subsidiaries — CH-Maritime I, II, and III. By 2019, public-facing materials referenced only "the maritime division."
-      </p>
-      <p class="cf-finding">
-        The 2017 leadership change appears to coincide with — but is not directly explained by — the compression of the three subsidiaries into a single division. The unit notes the compression is documented in two independent filings; the leadership change is documented in a third.
-      </p>
-      <p class="cf-finding">
-        The discrepancy has not, to the unit's knowledge, been addressed in subsequent filings. The reader should not assume this means it was concealed; it may simply not have been asked.
-      </p>
+      {% if finding_p1 %}
+      <p class="cf-finding">{{ finding_p1 }}</p>
+      {% endif %}
+      {% if finding_p2 %}
+      <p class="cf-finding">{{ finding_p2 }}</p>
+      {% endif %}
+      {% if finding_p3 %}
+      <p class="cf-finding">{{ finding_p3 }}</p>
+      {% endif %}
+      {% if not finding_p1 %}
+      <p class="cf-finding" style="font-style:italic;color:var(--ink-faded)">The file has not yet been bound. Convene the unit to build the record.</p>
+      {% endif %}
 
       {# Oracle margin note — gold panel, dark text per engineering handoff §8 #}
       <div class="filer-panel" style="background:var(--filer-oracle);margin-bottom:36px">
@@ -364,7 +372,7 @@
           <span class="fp-label" style="color:var(--ink)">Oracle · Margin note</span>
         </div>
         <p class="fp-body" style="color:var(--ink)">
-          The address discrepancy is the central anomaly in this file. It is the kind of detail that does not look intentional in a single source and does look intentional across three. The reader is advised to weigh it accordingly.
+          {% if margin_note %}{{ margin_note }}{% else %}The unit's margin note will appear here when the case file is bound.{% endif %}
         </p>
       </div>
 
@@ -373,15 +381,7 @@
       {# Sections in the file — TOC #}
       <div class="cf-section-eyebrow">Sections in the file</div>
       <div style="margin-bottom:36px">
-        {% set sections = [
-          ("I",   "The record",                ""),
-          ("II",  "The timeline",              ""),
-          ("III", "Contradictions on file",    ""),
-          ("IV",  "The narrative drift",       ""),
-          ("V",   "The source inventory",      ""),
-          ("VI",  "The exhibits",              ""),
-        ] %}
-        {% for roman, title, count in sections %}
+        {% for roman, title, count in sections_toc %}
         <div class="cf-toc-row">
           <span class="cf-toc-num">{{ roman }}.</span>
           <span class="cf-toc-name">{{ title }}</span>
@@ -402,7 +402,7 @@
           <span class="fp-label" style="color:var(--ink)">Oracle · Margin note</span>
         </div>
         <p class="fp-body" style="color:var(--ink)">
-          Eleven entries on file. Three material to the finding. Listed in order of weight, not chronology.
+          {% if attribution_oracle %}{{ attribution_oracle }}{% else %}Oracle has not yet signed the file.{% endif %}
         </p>
       </div>
 
@@ -413,7 +413,7 @@
           <span class="fp-label" style="color:var(--paper)">Nexus · On the board</span>
         </div>
         <p class="fp-body" style="color:var(--paper)">
-          Nexus pinned M. Calderon to the board. Linked to 4 entities so far.
+          {% if attribution_nexus %}{{ attribution_nexus }}{% else %}Nexus has not yet been convened on this case.{% endif %}
         </p>
       </div>
 
@@ -424,7 +424,7 @@
           <span class="fp-label" style="color:var(--paper)">Ghost · On the recovery</span>
         </div>
         <p class="fp-body" style="color:var(--paper)">
-          Ghost recovered 9 archived snapshots from ICIJ leaks database.
+          {% if attribution_ghost %}{{ attribution_ghost }}{% else %}Ghost has not yet recovered material on this case.{% endif %}
         </p>
       </div>
 
@@ -435,7 +435,7 @@
           <span class="fp-label" style="color:var(--paper)">Infiltrator · In the field</span>
         </div>
         <p class="fp-body" style="color:var(--paper)">
-          Infiltrator entered Panama corporate registry. 1,247 candidates.
+          {% if attribution_infiltrator %}{{ attribution_infiltrator }}{% else %}Infiltrator has not yet gone to the floor on this case.{% endif %}
         </p>
       </div>
 

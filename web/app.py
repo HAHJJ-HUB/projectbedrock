@@ -1,5 +1,6 @@
 """FastAPI web application — case file dashboard."""
 
+import re
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -25,6 +26,8 @@ from web.database import (
     update_run,
 )
 
+from report_html import _confidence_level, _finding_paragraphs, _parse_oracle_output
+
 app = FastAPI(title="Case File Dashboard")
 templates = Jinja2Templates(directory="web/templates")
 
@@ -40,6 +43,48 @@ def startup():
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
+def _load_oracle_output(case_id: int) -> dict:
+    """Load and parse Oracle's output for a case. Returns empty-valued dict if unavailable."""
+    empty = {k: "" for k in [
+        "finding", "margin_note", "section_i", "section_ii", "section_iii",
+        "section_iv", "section_v", "section_vi", "attribution", "confidence", "signature",
+    ]}
+    for path in [Path(f"output/case_{case_id}/report.md"), Path("output/report.md")]:
+        if path.exists():
+            try:
+                return _parse_oracle_output(path.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+    return empty
+
+
+def _attr_line_for(filer: str, attribution_text: str) -> str:
+    """Return the attribution line that mentions a specific filer."""
+    for line in attribution_text.splitlines():
+        if filer.lower() in line.lower():
+            return line.strip()
+    return ""
+
+
+def _sections_toc(parsed: dict) -> list:
+    """Build TOC rows (roman, title, count_label) for the six body sections."""
+    def url_count(text: str) -> str:
+        urls = re.findall(r"https?://\S+", text)
+        return str(len(set(urls))) if urls else ""
+
+    def has(key: str) -> bool:
+        return bool(parsed.get(key, "").strip())
+
+    return [
+        ("I",   "The record",             "on file" if has("section_i")   else ""),
+        ("II",  "The timeline",           "on file" if has("section_ii")  else ""),
+        ("III", "Contradictions on file", "on file" if has("section_iii") else ""),
+        ("IV",  "The narrative drift",    "on file" if has("section_iv")  else ""),
+        ("V",   "The source inventory",   url_count(parsed.get("section_v", "")) or ("on file" if has("section_v") else "")),
+        ("VI",  "The exhibits",           "on file" if has("section_vi")  else ""),
+    ]
+
+
 def _run_research_background(case_id: int, run_id: int, topic: str, scope: str) -> None:
     """Runs the CrewAI pipeline in a background thread."""
     try:
@@ -51,21 +96,20 @@ def _run_research_background(case_id: int, run_id: int, topic: str, scope: str) 
 
         sources = get_all_sources(topic=topic)
         from web.database import get_notes
-        # Store a system note summarizing the run
         add_note(
             case_id=case_id,
-            content=f"Research run complete. {len(sources)} sources discovered and extracted.",
+            content=f"The unit filed {len(sources)} items to the record.",
             source="system",
-            agent="pipeline",
+            agent="the unit",
         )
         update_run(run_id, "complete", sources_found=len(sources))
     except Exception as e:
         update_run(run_id, "failed", error=str(e))
         add_note(
             case_id=case_id,
-            content=f"Research run failed: {e}",
+            content=f"The unit could not complete the case. {e}",
             source="system",
-            agent="pipeline",
+            agent="the unit",
         )
 
 
@@ -163,9 +207,9 @@ async def run_research(
     run = create_run(case_id=case_id, scope=scope)
     add_note(
         case_id=case_id,
-        content=f"Research run #{run['id']} started. Scope: {scope or 'unrestricted'}.",
+        content=f"The unit convened — session #{run['id']}. Scope: {scope or 'unrestricted'}.",
         source="system",
-        agent="pipeline",
+        agent="the unit",
     )
 
     thread = threading.Thread(
@@ -212,6 +256,12 @@ async def case_file_view(request: Request, case_id: int):
         findings = retrieve_findings(case["name"], topic=case["name"], n_results=50)
     except Exception:
         pass
+
+    parsed = _load_oracle_output(case_id)
+    fp = _finding_paragraphs(parsed.get("finding", ""))
+    attr = parsed.get("attribution", "")
+    confidence_body = parsed.get("confidence", "")
+
     bound_at = datetime.utcnow().strftime("%Y-%m-%d  %H:%M UTC")
     return templates.TemplateResponse(request, "case_file.html", {
         "case": case,
@@ -220,6 +270,17 @@ async def case_file_view(request: Request, case_id: int):
         "stats": stats,
         "findings": findings,
         "bound_at": bound_at,
+        "finding_p1": fp[0] if len(fp) > 0 else "",
+        "finding_p2": fp[1] if len(fp) > 1 else "",
+        "finding_p3": fp[2] if len(fp) > 2 else "",
+        "margin_note": parsed.get("margin_note", ""),
+        "sections_toc": _sections_toc(parsed),
+        "attribution_oracle":      _attr_line_for("Oracle",      attr),
+        "attribution_nexus":       _attr_line_for("Nexus",       attr),
+        "attribution_ghost":       _attr_line_for("Ghost",       attr),
+        "attribution_infiltrator": _attr_line_for("Infiltrator", attr),
+        "confidence_level":  _confidence_level(confidence_body) if confidence_body else "",
+        "confidence_reason": confidence_body,
     })
 
 
