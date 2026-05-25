@@ -374,12 +374,12 @@
       <div class="cf-section-eyebrow">Sections in the file</div>
       <div style="margin-bottom:36px">
         {% set sections = [
-          ("I",   "Timeline of the record",  ""),
-          ("II",  "Contradictions on file",  ""),
-          ("III", "Narrative drift",          ""),
-          ("IV",  "Items filed",              stats.sources if stats.sources else ""),
-          ("V",   "The source inventory",    ""),
-          ("VI",  "Exhibits",                ""),
+          ("I",   "The record",                ""),
+          ("II",  "The timeline",              ""),
+          ("III", "Contradictions on file",    ""),
+          ("IV",  "The narrative drift",       ""),
+          ("V",   "The source inventory",      ""),
+          ("VI",  "The exhibits",              ""),
         ] %}
         {% for roman, title, count in sections %}
         <div class="cf-toc-row">
