@@ -33,6 +33,46 @@
 
 {% block head_styles %}
 
+/* ── Oracle stamp ──────────────────────────────────────────────────────────── */
+.oracle-stamp {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 11px 20px;
+  border: 2.5px solid #C0392B;
+  box-shadow: inset 0 0 0 1.5px #C0392B;
+  transform: rotate(-5deg);
+  transform-origin: left center;
+  color: #C0392B;
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  opacity: 0.72;
+  line-height: 1.5;
+}
+.oracle-stamp-sm {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 13px;
+  border: 2px solid #C0392B;
+  box-shadow: inset 0 0 0 1px #C0392B;
+  transform: rotate(-3deg);
+  transform-origin: left center;
+  color: #C0392B;
+  font-family: var(--font-sans);
+  font-size: 7px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  opacity: 0.68;
+  line-height: 1.5;
+}
+
 /* ── Case file document styles ─────────────────────────────────────────────── */
 
 .cf-page {
@@ -70,24 +110,6 @@
   color: var(--ink-faded);
   margin-bottom: 20px;
   max-width: 640px;
-}
-.cf-stamp {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  font-family: var(--font-sans);
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: var(--ink-faded);
-}
-.cf-stamp-dot {
-  width: 3px;
-  height: 3px;
-  background: var(--paper-border);
-  border-radius: 50%;
-  flex-shrink: 0;
 }
 
 /* Two-column layout */
@@ -276,12 +298,12 @@
       {% if case.description %}{{ case.description }}{% else %}A reconstruction of the record.{% endif %}
     </p>
 
-    <div class="cf-stamp">
-      <span>Written by Oracle</span>
-      <div class="cf-stamp-dot"></div>
-      <span>Filed {{ bound_at }}</span>
-      <div class="cf-stamp-dot"></div>
-      <span>{{ case.case_number }}</span>
+    <div style="margin-top:22px">
+      <div class="oracle-stamp">
+        <span>Oracle</span>
+        <span>Filed {{ bound_at[:10] if bound_at else "—" }}</span>
+        <span>{{ case.case_number }}</span>
+      </div>
     </div>
 
   </div>
@@ -447,8 +469,10 @@
   <div class="cf-footer">
 
     <div>
-      <div style="font-family:var(--font-sans);font-size:8px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--ink-faded);margin-bottom:5px">Signed by Oracle</div>
-      <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-faded)">{{ bound_at }}</div>
+      <div class="oracle-stamp-sm">
+        <span>Oracle</span>
+        <span>{{ bound_at[:10] if bound_at else "—" }}</span>
+      </div>
     </div>
 
     <div style="display:flex;align-items:center;gap:10px">

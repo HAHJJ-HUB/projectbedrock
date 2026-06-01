@@ -6,7 +6,7 @@
   font-family: var(--font-sans);
   font-size: 9px; font-weight: 500;
   letter-spacing: 0.25em; text-transform: uppercase;
-  color: var(--brass-deepest);
+  color: var(--brass-faded);
 }
 .panel {
   background: var(--wood-mid);
@@ -63,14 +63,14 @@
 <div class="page">
 
   <!-- Breadcrumb -->
-  <div class="flex items-center gap-2" style="margin-bottom:28px;font-family:var(--font-sans);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--brass-deepest)">
-    <a href="/" style="color:var(--brass-deepest);text-decoration:none;transition:color 0.1s"
+  <div class="flex items-center gap-2" style="margin-bottom:28px;font-family:var(--font-sans);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--brass-faded)">
+    <a href="/" style="color:var(--brass-faded);text-decoration:none;transition:color 0.1s"
        onmouseover="this.style.color='var(--brass-muted)'"
-       onmouseout="this.style.color='var(--brass-deepest)'">Registry</a>
+       onmouseout="this.style.color='var(--brass-faded)'">Registry</a>
     <span>/</span>
     <span style="color:var(--brass)">{{ case.case_number }}</span>
     <span>/</span>
-    <span style="color:var(--brass-deepest)">{{ case.name }}</span>
+    <span style="color:var(--brass-faded)">{{ case.name }}</span>
   </div>
 
   <!-- Case header -->
@@ -80,7 +80,7 @@
         <span style="font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--brass);letter-spacing:0.08em">{{ case.case_number }}</span>
         <span class="status-pill status-{{ case.status }}">{{ case.status }}</span>
         <span class="status-pill status-{{ case.priority }}">{{ case.priority }}</span>
-        <span style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;padding:2px 7px;border:0.5px solid var(--border-dark);color:var(--brass-deepest)">{{ case.subject_type }}</span>
+        <span style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;padding:2px 7px;border:0.5px solid var(--border-dark);color:var(--brass-faded)">{{ case.subject_type }}</span>
       </div>
       <h1 style="font-family:var(--font-serif);font-size:26px;font-weight:500;color:var(--bone);margin-bottom:4px">{{ case.name }}</h1>
       {% if case.description %}
@@ -89,7 +89,7 @@
       {% if case.tags %}
       <div class="flex items-center gap-2" style="margin-top:8px">
         {% for tag in case.tags %}
-        <span style="font-family:var(--font-sans);font-size:8px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;padding:2px 7px;border:0.5px solid var(--border-dark);color:var(--brass-deepest)">{{ tag }}</span>
+        <span style="font-family:var(--font-sans);font-size:8px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;padding:2px 7px;border:0.5px solid var(--border-dark);color:var(--brass-faded)">{{ tag }}</span>
         {% endfor %}
       </div>
       {% endif %}
@@ -118,7 +118,7 @@
       ("Opened",        case.created_at[:10], "var(--brass-faded)"),
     ] %}
     <div class="card" style="padding:16px 20px">
-      <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass-deepest);margin-bottom:8px">{{ label }}</div>
+      <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:8px">{{ label }}</div>
       <div style="font-family:var(--font-serif);font-size:24px;font-weight:500;color:{{ color }}">{{ val }}</div>
     </div>
     {% endfor %}
@@ -134,7 +134,7 @@
       <div class="panel">
         <div class="panel-head">
           <span class="section-label">Add to case file</span>
-          <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest)">manual entry</span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-faded)">manual entry</span>
         </div>
         <div class="panel-body">
           <form method="post" action="/cases/{{ case.id }}/notes" class="flex gap-3">
@@ -150,13 +150,13 @@
       <div class="panel">
         <div class="panel-head">
           <span class="section-label">Case timeline</span>
-          <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest)">{{ notes | length }} entries</span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-faded)">{{ notes | length }} entries</span>
         </div>
         <div class="panel-body">
           {% if not notes %}
           <div style="text-align:center;padding:32px 0">
             <div class="eyebrow" style="margin-bottom:8px">No entries yet</div>
-            <p style="font-family:var(--font-serif);font-style:italic;font-size:13px;color:var(--brass-deepest)">Add an observation, or convene the unit to begin building the record.</p>
+            <p style="font-family:var(--font-serif);font-style:italic;font-size:13px;color:var(--brass-faded)">Add an observation, or convene the unit to begin building the record.</p>
           </div>
           {% else %}
           <div class="timeline-rail">
@@ -171,11 +171,11 @@
                   color:{% if note.source == 'manual' %}var(--amber){% elif note.source == 'unit' or note.source == 'system' %}var(--filer-nexus-tint){% else %}var(--filer-ghost-tint){% endif %}">
                   {% if note.source == 'system' or note.source == 'unit' %}the unit{% elif note.agent %}{{ note.agent }}{% else %}{{ note.source }}{% endif %}
                 </span>
-                <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest)">
+                <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-faded)">
                   {{ note.created_at[:16] | replace('T', ' ') }}
                 </span>
               </div>
-              <p style="font-family:var(--font-serif);font-size:13px;line-height:1.65;color:var(--bone-body)">{{ note.content }}</p>
+              <p style="font-family:var(--font-serif);font-size:14px;line-height:1.7;color:var(--bone-body)">{{ note.content }}</p>
             </div>
             {% endfor %}
           </div>
@@ -193,14 +193,14 @@
         <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
           {% for f in findings[:10] %}
           <div style="border-left:1px solid var(--border-dark);padding-left:12px">
-            <div style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.source_url }}</div>
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--brass-faded);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.source_url }}</div>
             <p style="font-family:var(--font-serif);font-size:12px;line-height:1.6;color:var(--brass-faded)">
               {{ f.content[:380] }}{% if f.content | length > 380 %}…{% endif %}
             </p>
           </div>
           {% endfor %}
           {% if findings | length > 10 %}
-          <div style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest);text-align:center">
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--brass-faded);text-align:center">
             + {{ findings | length - 10 }} more on file
           </div>
           {% endif %}
@@ -240,12 +240,12 @@
             {% endfor %}
           </div>
           <div style="margin-bottom:4px;padding-bottom:12px;border-bottom:0.5px solid var(--border-dark)">
-            <span style="font-family:var(--font-serif);font-style:italic;font-size:11px;color:var(--brass-deepest)">All four on standby</span>
+            <span style="font-family:var(--font-serif);font-style:italic;font-size:11px;color:var(--brass-faded)">All four on standby</span>
           </div>
 
           <form method="post" action="/cases/{{ case.id }}/research" id="run-form">
             <div style="margin-bottom:12px">
-              <label style="display:block;font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass-deepest);margin-bottom:6px">
+              <label style="display:block;font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:6px">
                 Scope <span style="letter-spacing:0;text-transform:none;font-weight:400">(optional)</span>
               </label>
               <input type="text" name="scope" class="input" style="font-size:13px"
@@ -259,7 +259,7 @@
               Convene the unit ↗
             </button>
           </form>
-          <p style="font-family:var(--font-serif);font-style:italic;font-size:11px;color:var(--brass-deepest);margin-top:10px;line-height:1.6">
+          <p style="font-family:var(--font-serif);font-style:italic;font-size:11px;color:var(--brass-faded);margin-top:10px;line-height:1.6">
             Infiltrator goes in first. The unit works the case in sequence. Items filed in the timeline as the record builds.
           </p>
         </div>
@@ -270,7 +270,7 @@
       <div class="panel">
         <div class="panel-head">
           <span class="section-label">Sessions on record</span>
-          <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest)">{{ runs | length }}</span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-faded)">{{ runs | length }}</span>
         </div>
         <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px" id="runs-list">
           {% for run in runs %}
@@ -280,12 +280,12 @@
               <div>
                 <div class="flex items-center gap-2" style="margin-bottom:3px">
                   <span class="status-pill status-{{ run.status }}">{{ run.status }}</span>
-                  <span style="font-family:var(--font-mono);font-size:9px;color:var(--brass-deepest)">#{{ run.id }}</span>
+                  <span style="font-family:var(--font-mono);font-size:9px;color:var(--brass-faded)">#{{ run.id }}</span>
                   {% if run.status == 'running' %}<div class="live-dot"></div>{% endif %}
                 </div>
-                <div style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest)">{{ run.started_at[:16] | replace('T', ' ') }}</div>
+                <div style="font-family:var(--font-mono);font-size:10px;color:var(--brass-faded)">{{ run.started_at[:16] | replace('T', ' ') }}</div>
                 {% if run.scope %}
-                <div style="font-family:var(--font-serif);font-style:italic;font-size:11px;color:var(--brass-deepest);margin-top:2px">{{ run.scope }}</div>
+                <div style="font-family:var(--font-serif);font-style:italic;font-size:11px;color:var(--brass-faded);margin-top:2px">{{ run.scope }}</div>
                 {% endif %}
               </div>
               <div style="text-align:right;flex-shrink:0">
@@ -324,7 +324,7 @@
             ("Priority", case.priority,       "var(--amber)"),
           ] %}
           <div class="flex items-center justify-between" style="padding:9px 0;border-bottom:0.5px solid var(--border-dark)">
-            <span style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;color:var(--brass-deepest)">{{ key }}</span>
+            <span style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;color:var(--brass-faded)">{{ key }}</span>
             <span style="font-family:var(--font-mono);font-size:11px;font-weight:500;color:{{ color }}">{{ val }}</span>
           </div>
           {% endfor %}

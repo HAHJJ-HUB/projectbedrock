@@ -27,7 +27,7 @@
   text-decoration: none;
   border-bottom: 2px solid transparent;
   margin-bottom: -0.5px;
-  color: var(--brass-deepest);
+  color: var(--brass-faded);
   transition: color 0.1s, border-color 0.1s;
 }
 .filter-tab.active { color: var(--brass); border-color: var(--brass); }
@@ -39,7 +39,7 @@
   letter-spacing: 0.12em; text-transform: uppercase;
   padding: 2px 7px;
   border: 0.5px solid var(--border-dark);
-  color: var(--brass-deepest);
+  color: var(--brass-faded);
   flex-shrink: 0;
 }
 
@@ -77,7 +77,7 @@
       ("Archived",    counts.archived, "var(--brass-deepest)"),
     ] %}
     <div class="card" style="padding:20px 24px">
-      <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--brass-deepest);margin-bottom:10px">{{ label }}</div>
+      <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:10px">{{ label }}</div>
       <div style="font-family:var(--font-serif);font-size:28px;font-weight:500;color:{{ color }}">{{ val }}</div>
     </div>
     {% endfor %}
@@ -100,9 +100,9 @@
       <div style="padding:14px 16px">
         <div class="flex items-center gap-2" style="margin-bottom:4px">
           <div class="badge badge-{{ filer }}" style="width:22px;height:22px;font-size:8px">{{ num }}</div>
-          <span style="font-family:var(--font-sans);font-size:13px;font-weight:500;color:var(--bone)">{{ name }}</span>
+          <span style="font-family:var(--font-sans);font-size:14px;font-weight:500;color:var(--bone)">{{ name }}</span>
         </div>
-        <div style="font-family:var(--font-serif);font-style:italic;font-size:12px;color:var(--brass-faded)">{{ role }}</div>
+        <div style="font-family:var(--font-serif);font-style:italic;font-size:13px;color:var(--brass-muted)">{{ role }}</div>
       </div>
     </div>
     {% endfor %}
@@ -152,7 +152,7 @@
       <!-- Name + chip + description -->
       <div class="flex-1 min-w-0" style="padding:0 20px">
         <div class="flex items-center gap-2" style="margin-bottom:3px">
-          <span style="font-family:var(--font-sans);font-size:13px;font-weight:500;color:var(--bone-body)">{{ case.name }}</span>
+          <span style="font-family:var(--font-sans);font-size:15px;font-weight:500;color:var(--bone)">{{ case.name }}</span>
           <span class="subject-chip">{{ case.subject_type }}</span>
           {% if case.tags %}{% for tag in case.tags %}
           <span class="subject-chip" style="font-size:8px">{{ tag }}</span>
@@ -167,7 +167,7 @@
       <div class="flex items-center gap-3" style="flex-shrink:0">
         <span class="status-pill status-{{ case.priority }}">{{ case.priority }}</span>
         <span class="status-pill status-{{ case.status }}">{{ case.status }}</span>
-        <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest);min-width:80px;text-align:right">{{ case.updated_at[:10] }}</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-faded);min-width:80px;text-align:right">{{ case.updated_at[:10] }}</span>
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="color:var(--brass-deepest);flex-shrink:0">
           <path d="M3.5 1.5L7 5l-3.5 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
