@@ -20,8 +20,10 @@ from web.database import (
     get_notes,
     get_run,
     get_runs,
+    get_settings,
     init_db,
     list_cases,
+    save_settings,
     update_case_status,
     update_run,
 )
@@ -461,3 +463,32 @@ async def analyze_case(request: Request, case_id: int):
         "case": case,
         "analysis": analysis,
     })
+
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    return templates.TemplateResponse(request, "settings.html", {
+        "settings": get_settings(),
+        "saved": request.query_params.get("saved") == "1",
+    })
+
+
+@app.post("/settings")
+async def settings_save(
+    request: Request,
+    default_priority:     str = Form("medium"),
+    default_subject_type: str = Form("topic"),
+    default_scope:        str = Form(""),
+    case_number_prefix:   str = Form("CASE"),
+    memory_scope:         str = Form("per-case"),
+    date_format:          str = Form("iso"),
+):
+    save_settings({
+        "default_priority":     default_priority,
+        "default_subject_type": default_subject_type,
+        "default_scope":        default_scope.strip(),
+        "case_number_prefix":   case_number_prefix.strip() or "CASE",
+        "memory_scope":         memory_scope,
+        "date_format":          date_format,
+    })
+    return RedirectResponse("/settings?saved=1", status_code=303)

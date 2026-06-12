@@ -61,6 +61,11 @@ def init_db() -> None:
             error           TEXT,
             FOREIGN KEY (case_id) REFERENCES cases(id)
         );
+
+        CREATE TABLE IF NOT EXISTS settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
         """)
 
 
@@ -201,6 +206,34 @@ def get_run(run_id: int) -> dict | None:
             "SELECT * FROM research_runs WHERE id=?", (run_id,)
         ).fetchone()
     return dict(row) if row else None
+
+
+_SETTINGS_DEFAULTS: dict[str, str] = {
+    "default_priority":     "medium",
+    "default_subject_type": "topic",
+    "default_scope":        "",
+    "case_number_prefix":   "CASE",
+    "memory_scope":         "per-case",
+    "date_format":          "iso",
+}
+
+
+def get_settings() -> dict[str, str]:
+    with db() as con:
+        rows = con.execute("SELECT key, value FROM settings").fetchall()
+    stored = {r["key"]: r["value"] for r in rows}
+    return {**_SETTINGS_DEFAULTS, **stored}
+
+
+def save_settings(updates: dict[str, str]) -> None:
+    with db() as con:
+        for key, value in updates.items():
+            if key in _SETTINGS_DEFAULTS:
+                con.execute(
+                    "INSERT INTO settings (key, value) VALUES (?,?) "
+                    "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                    (key, value),
+                )
 
 
 def case_stats(case_id: int) -> dict:
