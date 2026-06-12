@@ -11,11 +11,16 @@
 }
 .profile-portrait {
   background: var(--paper);
+  background-image:
+    radial-gradient(ellipse 100% 55% at 50% -5%, var(--paper-aged) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 50% at 0% 100%, var(--paper-band) 0%, transparent 45%),
+    radial-gradient(ellipse 50% 50% at 100% 100%, var(--paper-band) 0%, transparent 45%);
   aspect-ratio: 4/5;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(201,191,159,0.3);
 }
 .profile-portrait img {
   width: 100%;
@@ -137,7 +142,7 @@
       <div style="margin-bottom:6px">
         <span style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--brass-faded)">The Casefilers · Filer {{ filer.num }}</span>
       </div>
-      <h1 style="font-family:var(--font-serif);font-size:38px;font-weight:500;color:var(--bone);margin-bottom:6px;line-height:1.1">{{ filer.name }}</h1>
+      <h1 style="font-family:var(--font-serif);font-size:42px;font-weight:500;color:var(--bone);margin-bottom:6px;line-height:1.1;letter-spacing:-0.01em">{{ filer.name }}</h1>
       <p style="font-family:var(--font-serif);font-style:italic;font-size:17px;color:{{ filer.tint }};margin-bottom:28px">{{ filer.role }}</p>
 
       <p style="font-family:var(--font-serif);font-size:16px;line-height:1.75;color:var(--bone-body);margin-bottom:18px">{{ filer.para_a }}</p>

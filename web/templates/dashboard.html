@@ -15,7 +15,7 @@
 
 .pri-critical { border-left: 2px solid var(--filer-infiltrator); }
 .pri-high     { border-left: 2px solid var(--amber); }
-.pri-medium   { border-left: 2px solid var(--brass-deepest); }
+.pri-medium   { border-left: 2px solid var(--brass-faded); }
 .pri-low      { border-left: 2px solid var(--border-dark); }
 
 .filter-tab {
@@ -58,27 +58,29 @@
 <div class="page">
 
   <!-- Briefing room header -->
-  <div style="margin-bottom:36px">
-    <div class="eyebrow" style="margin-bottom:10px">Briefing room · Room 7</div>
-    <h1 style="font-family:var(--font-serif);font-size:30px;font-weight:500;color:var(--bone);margin-bottom:6px">
-      Case file registry
-    </h1>
-    <p style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:var(--brass-faded)">
-      {{ counts.total }} cases on file &middot; {{ counts.active }} active
-    </p>
+  <div style="margin-bottom:40px;padding-bottom:32px;border-bottom:0.5px solid var(--border-dark)">
+    <div style="border-left:2px solid var(--brass-faded);padding-left:20px">
+      <div class="eyebrow" style="margin-bottom:10px;color:var(--brass-muted)">Briefing room · Room 7</div>
+      <h1 style="font-family:var(--font-serif);font-size:38px;font-weight:500;color:var(--bone);margin-bottom:8px;line-height:1.1">
+        Case file registry
+      </h1>
+      <p style="font-family:var(--font-serif);font-style:italic;font-size:15px;color:var(--brass-faded)">
+        {{ counts.total }} cases on file &middot; {{ counts.active }} active
+      </p>
+    </div>
   </div>
 
   <!-- Metrics row -->
   <div class="grid grid-4 gap-3" style="margin-bottom:36px">
-    {% for label, val, color in [
-      ("Total cases", counts.total,    "var(--brass)"),
-      ("Active",      counts.active,   "var(--brass)"),
-      ("Closed",      counts.closed,   "var(--brass-faded)"),
-      ("Archived",    counts.archived, "var(--brass-deepest)"),
+    {% for label, val, color, accent in [
+      ("Total cases", counts.total,    "var(--brass)",       "var(--brass-faded)"),
+      ("Active",      counts.active,   "var(--brass)",       "var(--brass-faded)"),
+      ("Closed",      counts.closed,   "var(--brass-faded)", "var(--brass-deepest)"),
+      ("Archived",    counts.archived, "var(--brass-faded)", "var(--brass-deepest)"),
     ] %}
-    <div class="card" style="padding:20px 24px">
-      <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:10px">{{ label }}</div>
-      <div style="font-family:var(--font-serif);font-size:28px;font-weight:500;color:{{ color }}">{{ val }}</div>
+    <div class="card" style="padding:22px 24px;border-top:1.5px solid {{ accent }}">
+      <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:12px">{{ label }}</div>
+      <div style="font-family:var(--font-serif);font-size:32px;font-weight:500;color:{{ color }};line-height:1">{{ val }}</div>
     </div>
     {% endfor %}
   </div>
@@ -95,14 +97,14 @@
       <!-- Portrait -->
       <img src="/static/images/{{ filer }}.png"
            alt="{{ name }}"
-           style="display:block;width:100%;height:200px;object-fit:contain;background:var(--paper)">
+           style="display:block;width:100%;height:230px;object-fit:contain;background:var(--paper)">
       <!-- Footer -->
       <div style="padding:14px 16px">
         <div class="flex items-center gap-2" style="margin-bottom:4px">
           <div class="badge badge-{{ filer }}" style="width:22px;height:22px;font-size:8px">{{ num }}</div>
           <span style="font-family:var(--font-sans);font-size:14px;font-weight:500;color:var(--bone)">{{ name }}</span>
         </div>
-        <div style="font-family:var(--font-serif);font-style:italic;font-size:13px;color:var(--brass-muted)">{{ role }}</div>
+        <div style="font-family:var(--font-serif);font-style:italic;font-size:13px;color:var(--brass-faded)">{{ role }}</div>
       </div>
     </div>
     {% endfor %}
@@ -124,7 +126,7 @@
       {% endfor %}
     </div>
     <div style="padding-bottom:12px">
-      <a href="/cases/new" class="btn btn-primary">+ Open case</a>
+      <a href="/cases/new" class="btn btn-primary">Open a case ↗</a>
     </div>
   </div>
 
@@ -168,7 +170,7 @@
         <span class="status-pill status-{{ case.priority }}">{{ case.priority }}</span>
         <span class="status-pill status-{{ case.status }}">{{ case.status }}</span>
         <span style="font-family:var(--font-mono);font-size:10px;color:var(--brass-faded);min-width:80px;text-align:right">{{ case.updated_at[:10] }}</span>
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="color:var(--brass-deepest);flex-shrink:0">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="color:var(--brass-faded);flex-shrink:0">
           <path d="M3.5 1.5L7 5l-3.5 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>

@@ -3,7 +3,7 @@
 {% block body_class %}ops-mode{% endblock %}
 
 {% block masthead %}
-<nav style="background:var(--wood-deepest);border-bottom:0.5px solid var(--ops-green-deep);padding:0 56px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100">
+<nav style="background:var(--wood-deepest);border-top:1px solid rgba(74,222,128,0.08);border-bottom:0.5px solid var(--ops-green-deep);box-shadow:0 2px 28px rgba(0,0,0,0.6);padding:0 56px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100">
   <div style="display:flex;align-items:center;gap:14px">
     <a href="/" style="display:flex;align-items:center;gap:14px;text-decoration:none">
       <div style="width:24px;height:24px;background:var(--brass);display:flex;align-items:center;justify-content:center;font-family:var(--font-sans);font-size:10px;font-weight:500;color:var(--wood-deepest);letter-spacing:0.05em">CF</div>
@@ -24,12 +24,33 @@
 {% endblock %}
 
 {% block head_styles %}
-body.ops-mode { background: var(--ops-room); }
+body.ops-mode {
+  background-color: var(--ops-room);
+  background-image:
+    radial-gradient(ellipse 120% 55% at 50% -8%, #0E2B1C 0%, transparent 50%),
+    radial-gradient(ellipse 60% 60% at 100% 100%, #040804 0%, transparent 45%),
+    radial-gradient(ellipse 60% 60% at 0% 100%, #040804 0%, transparent 45%);
+}
+body.ops-mode::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 1px,
+    rgba(0,180,70,0.022) 1px,
+    rgba(0,180,70,0.022) 2px
+  );
+  pointer-events: none;
+  z-index: 9998;
+}
 
 .ops-subject-band {
   background: var(--wood-deepest);
   border-bottom: 0.5px solid var(--ops-green-deep);
-  padding: 14px 56px;
+  padding: 18px 56px;
+  box-shadow: 0 1px 12px rgba(0,0,0,0.4);
 }
 
 .ops-grid {
@@ -48,8 +69,8 @@ body.ops-mode { background: var(--ops-room); }
   transition: opacity 0.45s ease, transform 0.45s ease, border-top-color 0.3s, opacity 0.3s;
 }
 .ops-card.arrived { opacity: 1; transform: translateY(0); }
-.ops-card.active  { border-top-color: var(--ops-green); }
-.ops-card.dim     { opacity: 0.38; }
+.ops-card.active  { border-top-color: var(--ops-green); box-shadow: 0 0 30px rgba(74,222,128,0.07), inset 0 0 40px rgba(74,222,128,0.025); }
+.ops-card.dim     { opacity: 0.35; }
 
 .ops-card-head {
   padding: 12px 14px 10px;
@@ -186,7 +207,8 @@ body.ops-mode { background: var(--ops-room); }
 #activation-overlay {
   position: fixed;
   inset: 0;
-  background: var(--ops-room);
+  background-color: var(--ops-room);
+  background-image: radial-gradient(ellipse 80% 80% at 50% 40%, #0D2A1C 0%, transparent 65%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -197,7 +219,7 @@ body.ops-mode { background: var(--ops-room); }
 .act-line {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 18px;
+  font-size: 22px;
   color: var(--brass);
   opacity: 0;
   transition: opacity 0.5s ease;
@@ -206,7 +228,7 @@ body.ops-mode { background: var(--ops-room); }
 .act-line.visible { opacity: 1; }
 .act-case-num {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--ops-green);
   letter-spacing: 0.15em;
@@ -300,9 +322,12 @@ body.ops-mode { background: var(--ops-room); }
 
 <!-- Subject band -->
 <div class="ops-subject-band">
-  <p style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:var(--brass-faded);max-width:800px">
-    "{{ case.name }}"{% if case.description %} — {{ case.description }}{% endif %}
-  </p>
+  <div style="display:flex;align-items:baseline;gap:16px">
+    <span style="font-family:var(--font-mono);font-size:9px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--ops-green-mid);flex-shrink:0">Subject</span>
+    <p style="font-family:var(--font-serif);font-style:italic;font-size:16px;color:var(--brass-muted);max-width:800px">
+      "{{ case.name }}"{% if case.description %} — <span style="color:var(--brass-faded);font-size:14px">{{ case.description }}</span>{% endif %}
+    </p>
+  </div>
 </div>
 
 <!-- Operations grid -->
