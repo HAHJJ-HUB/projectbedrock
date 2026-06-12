@@ -21,6 +21,7 @@ def build_llm() -> LLM:
 def build_crew(
     topic: str,
     scope: str = "",
+    case_id: int = 0,
     step_callback=None,
     task_callback=None,
 ) -> Crew:
@@ -32,6 +33,10 @@ def build_crew(
     oracle = create_oracle(llm)
 
     scope_clause = f"\n\nResearch scope / constraints: {scope}" if scope else ""
+
+    from pathlib import Path
+    output_dir = Path(f"output/case_{case_id}") if case_id else Path("output")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Task 1: Source Discovery ────────────────────────────────────────────
     task_discover = Task(
@@ -196,7 +201,7 @@ def build_crew(
         ),
         agent=oracle,
         context=[task_discover, task_extract, task_analyze],
-        output_file="output/report.md",
+        output_file=str(output_dir / "report.md"),
     )
 
     crew_kwargs = dict(
@@ -204,7 +209,7 @@ def build_crew(
         tasks=[task_discover, task_extract, task_analyze, task_report],
         process=Process.sequential,
         verbose=True,
-        output_log_file="output/crew_log.txt",
+        output_log_file=str(output_dir / "crew_log.txt"),
     )
     if step_callback is not None:
         crew_kwargs["step_callback"] = step_callback

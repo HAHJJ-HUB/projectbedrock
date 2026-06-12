@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}The Casefilers{% endblock %}
+
+{% block head_styles %}
+.about-hero {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 72px 0 64px;
+  text-align: center;
+}
+.trust-signals {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  border: 0.5px solid var(--border-dark);
+  overflow: hidden;
+  max-width: 560px;
+  margin: 0 auto 48px;
+}
+.trust-item {
+  flex: 1;
+  padding: 12px 20px;
+  border-right: 0.5px solid var(--border-dark);
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--brass-faded);
+  text-align: center;
+}
+.trust-item:last-child { border-right: none; }
+
+.filer-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border: 0.5px solid var(--border-dark);
+  overflow: hidden;
+  margin-bottom: 64px;
+}
+.strip-filer {
+  border-right: 0.5px solid var(--border-dark);
+  text-decoration: none;
+  transition: background 0.1s;
+  display: flex;
+  flex-direction: column;
+}
+.strip-filer:last-child { border-right: none; }
+.strip-filer:hover { background: var(--wood-mid); }
+.strip-portrait {
+  width: 100%;
+  aspect-ratio: 4/5;
+  object-fit: contain;
+  background: var(--paper);
+  display: block;
+}
+.strip-footer {
+  padding: 12px 14px;
+  border-top: 0.5px solid var(--border-dark);
+}
+
+.three-verbs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 64px;
+}
+.verb-block {
+  padding: 18px 32px;
+  border: 0.5px solid var(--border-dark);
+  border-right: none;
+  text-align: center;
+}
+.verb-block:last-child { border-right: 0.5px solid var(--border-dark); }
+.verb {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--bone);
+  display: block;
+  margin-bottom: 4px;
+}
+.verb-sub {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--brass-faded);
+}
+{% endblock %}
+
+{% block content %}
+<div class="page">
+
+  <!-- Hero -->
+  <div class="about-hero">
+    <div class="eyebrow" style="margin-bottom:20px">Public-source intelligence unit</div>
+    <h1 style="font-family:var(--font-serif);font-size:42px;font-weight:500;color:var(--bone);line-height:1.15;margin-bottom:18px">
+      Reconstruct the record.<br>Build the case.
+    </h1>
+    <p style="font-family:var(--font-serif);font-style:italic;font-size:18px;color:var(--brass-faded);line-height:1.65;margin-bottom:40px">
+      The Casefilers do not run searches. They open cases.<br>
+      They activate the unit. They build the file.
+    </p>
+
+    <!-- Trust signals -->
+    <div class="trust-signals">
+      <div class="trust-item">By invitation</div>
+      <div class="trust-item">No public log</div>
+      <div class="trust-item">Built for the record</div>
+    </div>
+
+    <a href="/cases/new" class="btn btn-primary" style="font-size:12px;padding:12px 28px">Open a case ↗</a>
+  </div>
+
+  <hr style="border:none;border-top:0.5px solid var(--border-dark);margin-bottom:48px">
+
+  <!-- Three verbs -->
+  <div class="eyebrow" style="text-align:center;margin-bottom:24px">How it works</div>
+  <div class="three-verbs">
+    <div class="verb-block">
+      <span class="verb">Open.</span>
+      <span class="verb-sub">Name the subject.<br>The case is opened.</span>
+    </div>
+    <div class="verb-block">
+      <span class="verb">Activate.</span>
+      <span class="verb-sub">The unit convenes.<br>The room seals.</span>
+    </div>
+    <div class="verb-block">
+      <span class="verb">Build.</span>
+      <span class="verb-sub">The unit works.<br>Oracle signs the file.</span>
+    </div>
+  </div>
+
+  <!-- Filer strip -->
+  <div class="eyebrow" style="text-align:center;margin-bottom:20px">The unit</div>
+  <div class="filer-strip">
+    {% for slug, num, name, role in [
+      ('infiltrator','01','Infiltrator','finds what search misses'),
+      ('ghost','02','Ghost','recovers what disappeared'),
+      ('nexus','03','Nexus','connects the record'),
+      ('oracle','04','Oracle','writes the finding'),
+    ] %}
+    <a href="/filers/{{ slug }}" class="strip-filer">
+      <img class="strip-portrait" src="/static/images/{{ slug }}.png" alt="{{ name }}">
+      <div class="strip-footer" style="border-top-color:var(--filer-{{ slug }})">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <div class="badge badge-{{ slug }}" style="width:18px;height:18px;font-size:7px">{{ num }}</div>
+          <span style="font-family:var(--font-sans);font-size:13px;font-weight:500;color:var(--bone)">{{ name }}</span>
+        </div>
+        <div style="font-family:var(--font-serif);font-style:italic;font-size:11px;color:var(--brass-faded)">{{ role }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- What it produces -->
+  <hr style="border:none;border-top:0.5px solid var(--border-dark);margin-bottom:48px">
+  <div style="max-width:640px;margin:0 auto;text-align:center;padding-bottom:72px">
+    <div class="eyebrow" style="margin-bottom:16px">The deliverable</div>
+    <p style="font-family:var(--font-serif);font-size:17px;line-height:1.75;color:var(--bone-body);margin-bottom:16px">
+      A signed case file. The finding in three paragraphs, every claim cited.
+      Contradictions noted. Narrative drift flagged. Confidence set.
+      Signed by Oracle with a timestamp.
+    </p>
+    <p style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:var(--brass-faded)">
+      Not a summary. Not a report. A case file.
+    </p>
+  </div>
+
+</div>
+{% endblock %}
