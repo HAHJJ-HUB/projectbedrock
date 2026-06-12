@@ -43,7 +43,7 @@ body.ops-mode::after {
     rgba(0,180,70,0.022) 2px
   );
   pointer-events: none;
-  z-index: 9998;
+  z-index: 8;
 }
 
 .ops-subject-band {
@@ -203,6 +203,12 @@ body.ops-mode::after {
   margin-top: 8px;
 }
 
+/* CSS fallback: text fades in after 1.5s if JS hasn't run yet */
+@keyframes act-appear {
+  from { opacity: 0; }
+  to   { opacity: 0.7; }
+}
+
 /* Activation overlay */
 #activation-overlay {
   position: fixed;
@@ -224,8 +230,9 @@ body.ops-mode::after {
   opacity: 0;
   transition: opacity 0.5s ease;
   text-align: center;
+  animation: act-appear 0.6s ease 1.5s forwards;
 }
-.act-line.visible { opacity: 1; }
+.act-line.visible { opacity: 1; animation: none; }
 .act-case-num {
   font-family: var(--font-mono);
   font-size: 16px;
@@ -234,8 +241,9 @@ body.ops-mode::after {
   letter-spacing: 0.15em;
   opacity: 0;
   transition: opacity 0.4s ease;
+  animation: act-appear 0.6s ease 2.1s forwards;
 }
-.act-case-num.visible { opacity: 1; }
+.act-case-num.visible { opacity: 1; animation: none; }
 #seal-countdown {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -243,14 +251,15 @@ body.ops-mode::after {
   letter-spacing: 0.15em;
   opacity: 0;
   transition: opacity 0.3s ease;
+  animation: act-appear 0.5s ease 4s forwards;
 }
-#seal-countdown.visible { opacity: 1; }
+#seal-countdown.visible { opacity: 1; animation: none; }
 #begin-btn {
   opacity: 0;
   transition: opacity 0.3s ease;
-  pointer-events: none;
+  animation: act-appear 0.5s ease 4.5s forwards;
 }
-#begin-btn.visible { opacity: 1; pointer-events: auto; }
+#begin-btn.visible { opacity: 1; animation: none; }
 
 /* Exit transition — binding overlay */
 #binding-overlay {

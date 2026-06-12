@@ -291,10 +291,14 @@ async def operations_room(request: Request, case_id: int, run_id: int = 0):
     case = get_case(case_id)
     if not case:
         return HTMLResponse("Case not found", status_code=404)
-    run = get_run(run_id) if run_id else None
-    if not run:
-        runs = get_runs(case_id)
-        run = runs[0] if runs else None
+    run = None
+    if run_id:
+        run = get_run(run_id)
+        if not run:
+            # Explicit run_id given but not found — fall back to most recent
+            runs = get_runs(case_id)
+            run = runs[0] if runs else None
+    # If no run_id in URL: show activation sequence with no polling (run=None)
     return templates.TemplateResponse(request, "operations.html", {
         "case": case,
         "run": run,
