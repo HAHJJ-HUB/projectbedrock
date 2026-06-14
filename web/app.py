@@ -87,6 +87,128 @@ def _sections_toc(parsed: dict) -> list:
     ]
 
 
+def _confidence_for_url(url: str) -> tuple[str, str]:
+    """Derive a confidence tier from the source domain. Returns (tier, basis)."""
+    u = (url or "").lower()
+    if any(t in u for t in (".gov", ".mil", "courtlistener", "sec.gov",
+                            "archives.gov", "supremecourt", "europa.eu")):
+        return "High", "official record"
+    if any(t in u for t in (".edu", "scholar.", "arxiv.", "jstor",
+                            "ncbi.nlm", "doi.org", "pubmed")):
+        return "High", "academic source"
+    if any(t in u for t in (".org", "reuters", "apnews", "bbc.", "nytimes",
+                            "washingtonpost", "theguardian", "propublica")):
+        return "Medium", "established publication"
+    if any(t in u for t in ("reddit", "twitter", "x.com", "pastebin",
+                            "medium.com", "substack", "blogspot", "wordpress")):
+        return "Low", "self-published"
+    if "web.archive.org" in u or "archive.ph" in u:
+        return "Medium", "archived capture"
+    return "Unverified", "source not yet rated"
+
+
+def _domain_of(url: str) -> str:
+    m = re.search(r"https?://([^/]+)", url or "")
+    return m.group(1).replace("www.", "") if m else (url or "—")
+
+
+def _build_evidence(findings: list) -> list:
+    """Numbered evidence inventory — each item is a citation anchor [n]."""
+    evidence = []
+    for i, f in enumerate(findings, start=1):
+        url = f.get("source_url", "") if isinstance(f, dict) else getattr(f, "source_url", "")
+        content = f.get("content", "") if isinstance(f, dict) else getattr(f, "content", "")
+        tier, basis = _confidence_for_url(url)
+        evidence.append({
+            "n": i,
+            "url": url,
+            "domain": _domain_of(url),
+            "snippet": (content[:240] + "…") if len(content) > 240 else content,
+            "confidence": tier,
+            "basis": basis,
+        })
+    return evidence
+
+
+def _build_record_timeline(notes: list) -> list:
+    """Timeline of record — every item carries date + source + confidence."""
+    source_conf = {
+        "manual":  ("Recorded",     "filer's own observation"),
+        "system":  ("Logged",       "unit operations log"),
+        "unit":    ("Logged",       "unit operations log"),
+    }
+    items = []
+    for note in notes:
+        src = note.get("source", "manual")
+        agent = note.get("agent") or ""
+        if src in ("system", "unit"):
+            label = "the unit"
+        elif agent:
+            label = agent
+        else:
+            label = src
+        conf, basis = source_conf.get(src, ("Corroborated", "filed to the record"))
+        items.append({
+            "date": (note.get("created_at", "")[:16] or "").replace("T", " "),
+            "source": label,
+            "confidence": conf,
+            "basis": basis,
+            "content": note.get("content", ""),
+        })
+    return items
+
+
+def _extract_contradictions(parsed: dict) -> list:
+    """Parse Oracle's contradictions section into source-paired records.
+
+    Each contradiction on the record is held as a pair: the two accounts that
+    do not agree. Returns [] when none are on file.
+    """
+    text = parsed.get("section_iii", "").strip()
+    if not text:
+        return []
+    pairs = []
+    # Split on blank lines / bullet markers; each block is one contradiction.
+    blocks = re.split(r"\n\s*\n|\n\s*[-•*]\s+", text)
+    for block in blocks:
+        block = block.strip()
+        if len(block) < 12:
+            continue
+        urls = re.findall(r"https?://\S+", block)
+        # A contradiction is a pair: split the prose on an adversative hinge.
+        split = re.split(r"\b(?:however|whereas|but|contradict[s]?|disputes?|conversely|against this)\b",
+                         block, maxsplit=1, flags=re.IGNORECASE)
+        account_a = split[0].strip(" .;:")
+        account_b = split[1].strip(" .;:") if len(split) > 1 else ""
+        pairs.append({
+            "account_a": account_a[:280],
+            "account_b": account_b[:280],
+            "source_a": _domain_of(urls[0]) if len(urls) > 0 else "source unattributed",
+            "source_b": _domain_of(urls[1]) if len(urls) > 1 else "source unattributed",
+        })
+    return pairs[:8]
+
+
+def _finding_status(runs: list, has_finding: bool, contradictions: int) -> dict:
+    """Finding status: draft / bound / disputed / revised — with a basis line."""
+    complete = [r for r in runs if r.get("status") == "complete"]
+    if not has_finding or not complete:
+        return {"key": "draft",
+                "label": "Draft",
+                "basis": "the unit has not yet bound this file"}
+    if contradictions > 0:
+        return {"key": "disputed",
+                "label": "Disputed",
+                "basis": f"{contradictions} contradiction{'s' if contradictions != 1 else ''} on the record"}
+    if len(complete) > 1:
+        return {"key": "revised",
+                "label": "Revised",
+                "basis": f"rebuilt across {len(complete)} sittings"}
+    return {"key": "bound",
+            "label": "Bound",
+            "basis": "signed by Oracle, no contradictions on record"}
+
+
 def _run_research_background(case_id: int, run_id: int, topic: str, scope: str) -> None:
     """Runs the CrewAI pipeline in a background thread."""
     try:
@@ -264,6 +386,13 @@ async def case_file_view(request: Request, case_id: int):
     attr = parsed.get("attribution", "")
     confidence_body = parsed.get("confidence", "")
 
+    # Structured records — citation anchors, source-paired contradictions,
+    # dated/sourced/rated timeline, and an overall finding status.
+    evidence       = _build_evidence(findings)
+    contradictions = _extract_contradictions(parsed)
+    record_timeline = _build_record_timeline(notes)
+    finding_status = _finding_status(runs, bool(fp), len(contradictions))
+
     bound_at = datetime.utcnow().strftime("%Y-%m-%d  %H:%M UTC")
     return templates.TemplateResponse(request, "case_file.html", {
         "case": case,
@@ -283,6 +412,10 @@ async def case_file_view(request: Request, case_id: int):
         "attribution_infiltrator": _attr_line_for("Infiltrator", attr),
         "confidence_level":  _confidence_level(confidence_body) if confidence_body else "",
         "confidence_reason": confidence_body,
+        "evidence":        evidence,
+        "contradictions":  contradictions,
+        "record_timeline": record_timeline,
+        "finding_status":  finding_status,
     })
 
 
