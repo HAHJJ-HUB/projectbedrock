@@ -57,6 +57,43 @@
   align-items: center;
   justify-content: center;
 }
+
+/* ── Case header — never let actions collide with the title ──────────────── */
+.case-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.case-header-id { min-width: 0; flex: 1 1 360px; }
+.case-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+/* ── Main working grid — left workspace + right unit sidebar ─────────────── */
+.case-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+.case-grid > .case-col-main { min-width: 0; }  /* contain long URLs / wide text */
+
+/* Tablet & below: sidebar drops under the workspace, full width. */
+@media (max-width: 960px) {
+  .case-grid { grid-template-columns: minmax(0, 1fr); }
+  .case-actions .btn { font-size: 10px; padding: 7px 12px; }
+}
+@media (max-width: 600px) {
+  .case-actions { width: 100%; }
+  .case-actions .btn { flex: 1 1 auto; justify-content: center; }
+}
 {% endblock %}
 
 {% block content %}
@@ -74,9 +111,9 @@
   </div>
 
   <!-- Case header -->
-  <div class="flex items-start justify-between" style="margin-bottom:28px">
-    <div>
-      <div class="flex items-center gap-3" style="margin-bottom:8px">
+  <div class="case-header">
+    <div class="case-header-id">
+      <div class="flex items-center gap-3 flex-wrap" style="margin-bottom:8px">
         <span style="font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--brass);letter-spacing:0.08em">{{ case.case_number }}</span>
         <span class="status-pill status-{{ case.status }}">{{ case.status }}</span>
         <span class="status-pill status-{{ case.priority }}">{{ case.priority }}</span>
@@ -87,14 +124,14 @@
       <p style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:var(--brass-faded);max-width:560px">{{ case.description }}</p>
       {% endif %}
       {% if case.tags %}
-      <div class="flex items-center gap-2" style="margin-top:8px">
+      <div class="flex items-center gap-2 flex-wrap" style="margin-top:8px">
         {% for tag in case.tags %}
         <span style="font-family:var(--font-sans);font-size:8px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;padding:2px 7px;border:0.5px solid var(--border-dark);color:var(--brass-faded)">{{ tag }}</span>
         {% endfor %}
       </div>
       {% endif %}
     </div>
-    <div class="flex items-center gap-2">
+    <div class="case-actions">
       <a href="/cases/{{ case.id }}/file" class="btn btn-primary">View case file ↗</a>
       <a href="/cases/{{ case.id }}/analyze" class="btn btn-ghost">Narrative analysis</a>
       <form method="post" action="/cases/{{ case.id }}/status" style="display:inline">
@@ -124,11 +161,11 @@
     {% endfor %}
   </div>
 
-  <!-- Main grid: left (2fr) + right sidebar -->
-  <div class="grid" style="grid-template-columns:1fr 320px;gap:16px;align-items:start">
+  <!-- Main grid: left workspace + right unit sidebar -->
+  <div class="case-grid">
 
     <!-- Left column -->
-    <div class="space-y-4">
+    <div class="space-y-4 case-col-main">
 
       <!-- Add note -->
       <div class="panel">

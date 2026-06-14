@@ -4,10 +4,15 @@
 {% block head_styles %}
 .profile-grid {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 280px minmax(0, 1fr);
   gap: 48px;
   align-items: start;
   margin-bottom: 48px;
+}
+@media (max-width: 760px) {
+  .profile-grid { grid-template-columns: 1fr; gap: 28px; }
+  .profile-portrait { max-width: 280px; }
+  .does-grid { grid-template-columns: 1fr; gap: 28px; }
 }
 .profile-portrait {
   background: var(--paper);

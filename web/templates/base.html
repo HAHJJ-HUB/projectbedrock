@@ -72,6 +72,7 @@
     /* ── Reset ─────────────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
+    html, body { overflow-x: hidden; max-width: 100%; }
 
     /* ── Base ──────────────────────────────────────────────────────────────── */
     body {
@@ -411,6 +412,30 @@
     /* ── Page wrapper ──────────────────────────────────────────────────────── */
     .page { max-width: 1240px; margin: 0 auto; padding: 40px var(--page-pad); }
 
+    /* ── Responsive grids ──────────────────────────────────────────────────── */
+    /* Collapse to 2 columns max on tablet, then 1 on phone (per CLAUDE.md). */
+    @media (max-width: 920px) {
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .grid-3 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 560px) {
+      .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .col-span-2 { grid-column: span 1; }
+    }
+
+    /* ── Masthead responsive ───────────────────────────────────────────────── */
+    /* Tablet: drop the live clock so nav links never overlap the brand. */
+    @media (max-width: 880px) {
+      .masthead-clock { display: none; }
+      .masthead-meta { gap: 10px; }
+    }
+    /* Phone: hide the secondary nav links; brand + open-case stay reachable. */
+    @media (max-width: 720px) {
+      .masthead { height: 56px; padding: 0 18px; }
+      .masthead-nav { display: none !important; }
+      .masthead .masthead-divider { display: none; }
+    }
+
     /* ── Mobile ────────────────────────────────────────────────────────────── */
     @media (max-width: 640px) {
       :root { --page-pad: 18px; }
@@ -431,7 +456,7 @@
         <span class="masthead-name">{% block system_name %}The Casefilers{% endblock %}</span>
       </a>
 
-      <div style="width:0.5px;height:20px;background:var(--border-dark)"></div>
+      <div class="masthead-divider" style="width:0.5px;height:20px;background:var(--border-dark)"></div>
 
       <nav class="masthead-nav" style="display:flex;align-items:center;gap:24px">
         <a href="/" {% if request.url.path == '/' %}class="active"{% endif %}>Registry</a>

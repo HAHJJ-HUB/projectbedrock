@@ -126,6 +126,16 @@
   font-size: 12px;
   color: var(--brass-faded);
 }
+
+@media (max-width: 680px) {
+  .about-hero { padding: 48px 0 40px; }
+  .three-verbs { flex-direction: column; }
+  .verb-block { width: 100%; border-right: 0.5px solid var(--border-dark); border-bottom: none; }
+  .verb-block + .verb-block { border-top: none; }
+  .filer-strip { grid-template-columns: repeat(2, 1fr); }
+  .strip-filer:nth-child(2) { border-right: none; }
+  .strip-filer:nth-child(1), .strip-filer:nth-child(2) { border-bottom: 0.5px solid var(--border-dark); }
+}
 {% endblock %}
 
 {% block content %}
