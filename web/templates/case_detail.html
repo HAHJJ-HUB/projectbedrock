@@ -167,6 +167,64 @@
     <!-- Left column -->
     <div class="space-y-4 case-col-main">
 
+      <!-- The brief -->
+      {% if case.objective or case.key_questions or case.scope or case.timeline_range or case.jurisdiction or case.known_sources %}
+      <div class="panel" style="border-top:2px solid var(--filer-oracle)">
+        <div class="panel-head">
+          <span class="section-label">The brief</span>
+          {% if case.sensitivity and case.sensitivity != 'standard' %}
+          <span style="font-family:var(--font-sans);font-size:8px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--amber)">{{ case.sensitivity }} sensitivity</span>
+          {% endif %}
+        </div>
+        <div class="panel-body space-y-3">
+          {% if case.objective %}
+          <div>
+            <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:5px">The objective</div>
+            <p style="font-family:var(--font-serif);font-size:15px;line-height:1.65;color:var(--bone)">{{ case.objective }}</p>
+          </div>
+          {% endif %}
+          {% if case.key_questions %}
+          <div>
+            <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:5px">Key questions</div>
+            {% for q in case.key_questions.split('\n') if q.strip() %}
+            <p style="font-family:var(--font-serif);font-size:13px;line-height:1.6;color:var(--bone-body);padding-left:14px;position:relative">
+              <span style="position:absolute;left:0;color:var(--brass-deepest)">—</span>{{ q.strip() }}
+            </p>
+            {% endfor %}
+          </div>
+          {% endif %}
+          <div class="grid grid-2 gap-3">
+            {% if case.timeline_range %}
+            <div>
+              <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:4px">Timeline range</div>
+              <div style="font-family:var(--font-mono);font-size:12px;color:var(--bone-body)">{{ case.timeline_range }}</div>
+            </div>
+            {% endif %}
+            {% if case.jurisdiction %}
+            <div>
+              <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:4px">Jurisdiction</div>
+              <div style="font-family:var(--font-serif);font-size:13px;color:var(--bone-body)">{{ case.jurisdiction }}</div>
+            </div>
+            {% endif %}
+          </div>
+          {% if case.scope %}
+          <div>
+            <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:5px">Scope boundaries</div>
+            <p style="font-family:var(--font-serif);font-style:italic;font-size:13px;line-height:1.6;color:var(--brass-muted)">{{ case.scope }}</p>
+          </div>
+          {% endif %}
+          {% if case.known_sources %}
+          <div>
+            <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:5px">Known sources at opening</div>
+            {% for s in case.known_sources.split('\n') if s.strip() %}
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--filer-ghost-tint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.strip() }}</div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
       <!-- Add note -->
       <div class="panel">
         <div class="panel-head">

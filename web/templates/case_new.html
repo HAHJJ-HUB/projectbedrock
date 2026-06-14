@@ -17,6 +17,68 @@
   color: var(--brass-faded);
   margin-top: 5px;
 }
+.opt {
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 400;
+  color: var(--brass-faded);
+}
+
+/* Brief sections */
+.brief-section { margin-bottom: 24px; }
+.brief-section-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.brief-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--brass-deepest);
+  letter-spacing: 0.1em;
+}
+.brief-title {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--brass-muted);
+}
+
+/* Sensitivity radios */
+.sens-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sens-opt {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 14px;
+  border: 0.5px solid var(--border-dark);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.sens-opt:hover { border-color: var(--brass-deepest); }
+.sens-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.sens-opt:has(input:checked) { border-color: var(--brass); background: rgba(184,168,122,0.05); }
+.sens-lbl {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--bone);
+}
+.sens-hint {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--brass-faded);
+  line-height: 1.4;
+}
+
+@media (max-width: 560px) {
+  .sens-row { grid-template-columns: 1fr; }
+}
 {% endblock %}
 
 {% block content %}
@@ -32,68 +94,155 @@
     Registry
   </a>
 
+  {% set d = defaults if defaults else {} %}
+
   <!-- Header -->
   <div style="margin-bottom:32px">
     <div class="eyebrow" style="margin-bottom:10px">New case file</div>
     <h1 style="font-family:var(--font-serif);font-size:28px;font-weight:500;color:var(--bone);margin-bottom:6px">Open a case</h1>
     <p style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:var(--brass-faded)">
-      Name the subject. The unit will gather the record.
+      Name the subject and set the brief. The sharper the brief, the sharper the file.
     </p>
   </div>
 
   <form method="post" action="/cases/new">
-    <div class="card" style="padding:28px;margin-bottom:16px">
 
-      <!-- Subject name -->
-      <div style="margin-bottom:22px">
-        <label class="form-label" for="name">Subject name</label>
-        <input type="text" name="name" id="name" class="input"
-               placeholder="e.g. Operation Paperclip, Enron Corporation, ..."
-               required autofocus>
-        <p class="form-hint">The unit takes this as the subject. Be as precise or as broad as you can manage.</p>
+    <!-- ── The subject ──────────────────────────────────────────────────── -->
+    <div class="brief-section">
+      <div class="brief-section-head">
+        <span class="brief-num">01</span>
+        <span class="brief-title">The subject</span>
       </div>
+      <div class="card" style="padding:28px">
 
-      <!-- Subject type + Priority -->
-      <div class="grid grid-2 gap-4" style="margin-bottom:22px">
-        <div>
-          <label class="form-label" for="subject_type">Subject type</label>
-          <select name="subject_type" id="subject_type" class="select">
-            <option value="topic">Topic</option>
-            <option value="person">Person</option>
-            <option value="organization">Organization</option>
-            <option value="event">Event</option>
-            <option value="technology">Technology</option>
-            <option value="location">Location</option>
-            <option value="other">Other</option>
-          </select>
+        <div style="margin-bottom:22px">
+          <label class="form-label" for="name">Subject name</label>
+          <input type="text" name="name" id="name" class="input"
+                 placeholder="e.g. Operation Paperclip, Enron Corporation, ..."
+                 required autofocus>
+          <p class="form-hint">The unit takes this as the subject. Be as precise or as broad as you can manage.</p>
         </div>
-        <div>
-          <label class="form-label" for="priority">Priority</label>
-          <select name="priority" id="priority" class="select">
-            <option value="low">Low</option>
-            <option value="medium" selected>Medium</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
-          </select>
+
+        <div class="grid grid-2 gap-4">
+          <div>
+            <label class="form-label" for="subject_type">Subject type</label>
+            <select name="subject_type" id="subject_type" class="select">
+              {% for val, lbl in [('person','Person'),('organization','Organisation'),('event','Event'),('topic','Topic'),('technology','Technology'),('location','Location'),('other','Other')] %}
+              <option value="{{ val }}" {% if d.default_subject_type == val %}selected{% endif %}>{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="jurisdiction">Jurisdiction / location <span class="opt">(optional)</span></label>
+            <input type="text" name="jurisdiction" id="jurisdiction" class="input"
+                   placeholder="e.g. United States · 1947–present">
+          </div>
         </div>
-      </div>
-
-      <!-- Brief -->
-      <div style="margin-bottom:22px">
-        <label class="form-label" for="description">Brief</label>
-        <textarea name="description" id="description" class="input" rows="3"
-                  placeholder="What are you investigating? Any specific angles or time periods to pursue?"></textarea>
-      </div>
-
-      <!-- Tags -->
-      <div>
-        <label class="form-label" for="tags">Tags <span style="letter-spacing:0;text-transform:none;font-weight:400;color:var(--brass-faded)">(comma-separated, optional)</span></label>
-        <input type="text" name="tags" id="tags" class="input"
-               placeholder="e.g. government, declassified, 1970s">
       </div>
     </div>
 
-    <div class="flex items-center justify-between">
+    <!-- ── The objective ────────────────────────────────────────────────── -->
+    <div class="brief-section">
+      <div class="brief-section-head">
+        <span class="brief-num">02</span>
+        <span class="brief-title">The objective</span>
+      </div>
+      <div class="card" style="padding:28px;border-top:2px solid var(--filer-oracle)">
+
+        <div style="margin-bottom:22px">
+          <label class="form-label" for="objective">What are you trying to prove, disprove, reconstruct, or clarify?</label>
+          <textarea name="objective" id="objective" class="input" rows="2"
+                    placeholder="State the question the file must answer. This is what the unit works toward."></textarea>
+          <p class="form-hint">The single most important line in the brief. The unit builds the file around this.</p>
+        </div>
+
+        <div>
+          <label class="form-label" for="key_questions">Key questions <span class="opt">(one per line, optional)</span></label>
+          <textarea name="key_questions" id="key_questions" class="input" rows="3"
+                    placeholder="Who knew, and when?&#10;What does the paper trail show?&#10;Where does the public account break down?"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── The scope ────────────────────────────────────────────────────── -->
+    <div class="brief-section">
+      <div class="brief-section-head">
+        <span class="brief-num">03</span>
+        <span class="brief-title">The scope</span>
+      </div>
+      <div class="card" style="padding:28px">
+
+        <div class="grid grid-2 gap-4" style="margin-bottom:22px">
+          <div>
+            <label class="form-label" for="timeline_range">Known timeline range <span class="opt">(optional)</span></label>
+            <input type="text" name="timeline_range" id="timeline_range" class="input"
+                   placeholder="e.g. 1990–2005">
+          </div>
+          <div>
+            <label class="form-label" for="priority">Priority</label>
+            <select name="priority" id="priority" class="select">
+              {% for val, lbl in [('low','Low'),('medium','Medium'),('high','High'),('critical','Critical')] %}
+              <option value="{{ val }}" {% if (d.default_priority or 'medium') == val %}selected{% endif %}>{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom:22px">
+          <label class="form-label" for="scope">Scope boundaries <span class="opt">(optional)</span></label>
+          <textarea name="scope" id="scope" class="input" rows="2"
+                    placeholder="What is in bounds and what the unit should leave alone.">{{ d.default_scope or '' }}</textarea>
+        </div>
+
+        <div>
+          <label class="form-label" for="sensitivity">Sensitivity</label>
+          <div class="sens-row">
+            {% for val, lbl, hint in [
+              ('standard','Standard','ordinary public-source work'),
+              ('elevated','Elevated','subject may be litigious or hostile'),
+              ('restricted','Restricted','handle the record with care'),
+            ] %}
+            <label class="sens-opt">
+              <input type="radio" name="sensitivity" value="{{ val }}" {% if val == 'standard' %}checked{% endif %}>
+              <span class="sens-lbl">{{ lbl }}</span>
+              <span class="sens-hint">{{ hint }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── The record ───────────────────────────────────────────────────── -->
+    <div class="brief-section">
+      <div class="brief-section-head">
+        <span class="brief-num">04</span>
+        <span class="brief-title">The record so far</span>
+      </div>
+      <div class="card" style="padding:28px">
+
+        <div style="margin-bottom:22px">
+          <label class="form-label" for="known_sources">Known sources <span class="opt">(one per line, optional)</span></label>
+          <textarea name="known_sources" id="known_sources" class="input" rows="3"
+                    placeholder="Paste URLs, document names, or leads the unit should start from."></textarea>
+          <p class="form-hint">Anything you already hold. The unit will verify and build outward from here.</p>
+        </div>
+
+        <div style="margin-bottom:22px">
+          <label class="form-label" for="description">Brief <span class="opt">(optional)</span></label>
+          <textarea name="description" id="description" class="input" rows="2"
+                    placeholder="Any context, angles, or background the unit should carry into the room."></textarea>
+        </div>
+
+        <div>
+          <label class="form-label" for="tags">Tags <span class="opt">(comma-separated, optional)</span></label>
+          <input type="text" name="tags" id="tags" class="input"
+                 placeholder="e.g. government, declassified, 1970s">
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between" style="flex-wrap:wrap;gap:12px">
       <a href="/" class="btn btn-ghost">Cancel</a>
       <button type="submit" class="btn btn-primary">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">

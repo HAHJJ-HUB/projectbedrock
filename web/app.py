@@ -257,7 +257,9 @@ async def dashboard(request: Request, status: str = ""):
 
 @app.get("/cases/new", response_class=HTMLResponse)
 async def new_case_form(request: Request):
-    return templates.TemplateResponse(request, "case_new.html")
+    return templates.TemplateResponse(request, "case_new.html", {
+        "defaults": get_settings(),
+    })
 
 
 @app.post("/cases/new")
@@ -265,8 +267,15 @@ async def create_case_post(
     request: Request,
     name: str = Form(...),
     subject_type: str = Form("topic"),
-    description: str = Form(""),
     priority: str = Form("medium"),
+    sensitivity: str = Form("standard"),
+    objective: str = Form(""),
+    key_questions: str = Form(""),
+    timeline_range: str = Form(""),
+    jurisdiction: str = Form(""),
+    known_sources: str = Form(""),
+    description: str = Form(""),
+    scope: str = Form(""),
     tags: str = Form(""),
 ):
     tag_list = [t.strip() for t in tags.split(",") if t.strip()]
@@ -276,6 +285,13 @@ async def create_case_post(
         description=description,
         priority=priority,
         tags=tag_list,
+        objective=objective.strip(),
+        key_questions=key_questions.strip(),
+        timeline_range=timeline_range.strip(),
+        jurisdiction=jurisdiction.strip(),
+        known_sources=known_sources.strip(),
+        scope=scope.strip(),
+        sensitivity=sensitivity,
     )
     return RedirectResponse(f"/cases/{case['id']}", status_code=303)
 

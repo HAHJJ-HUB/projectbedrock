@@ -68,6 +68,21 @@ def init_db() -> None:
         );
         """)
 
+        # ── Migrations — add case-brief columns if missing ──────────────────
+        existing = {r["name"] for r in con.execute("PRAGMA table_info(cases)").fetchall()}
+        brief_columns = {
+            "objective":      "''",
+            "key_questions":  "''",
+            "timeline_range": "''",
+            "jurisdiction":   "''",
+            "known_sources":  "''",
+            "scope":          "''",
+            "sensitivity":    "'standard'",
+        }
+        for col, default in brief_columns.items():
+            if col not in existing:
+                con.execute(f"ALTER TABLE cases ADD COLUMN {col} TEXT DEFAULT {default}")
+
 
 def _next_case_number() -> str:
     with db() as con:
@@ -82,16 +97,26 @@ def create_case(
     description: str = "",
     priority: str = "medium",
     tags: list[str] | None = None,
+    objective: str = "",
+    key_questions: str = "",
+    timeline_range: str = "",
+    jurisdiction: str = "",
+    known_sources: str = "",
+    scope: str = "",
+    sensitivity: str = "standard",
 ) -> dict:
     now = datetime.utcnow().isoformat()
     case_number = _next_case_number()
     with db() as con:
         cur = con.execute(
             """INSERT INTO cases
-               (case_number, name, subject_type, description, priority, tags, created_at, updated_at)
-               VALUES (?,?,?,?,?,?,?,?)""",
+               (case_number, name, subject_type, description, priority, tags,
+                objective, key_questions, timeline_range, jurisdiction,
+                known_sources, scope, sensitivity, created_at, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (case_number, name, subject_type, description, priority,
-             json.dumps(tags or []), now, now),
+             json.dumps(tags or []), objective, key_questions, timeline_range,
+             jurisdiction, known_sources, scope, sensitivity, now, now),
         )
         case_id = cur.lastrowid
     return get_case(case_id)
