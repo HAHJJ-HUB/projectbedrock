@@ -136,10 +136,10 @@
       <a href="/cases/{{ case.id }}/analyze" class="btn btn-ghost">Narrative analysis</a>
       <form method="post" action="/cases/{{ case.id }}/status" style="display:inline">
         {% if case.status == 'active' %}
-        <input type="hidden" name="status" value="closed">
+        <input type="hidden" name="status" value="closed" style="display:none">
         <button type="submit" class="btn btn-ghost">Close case</button>
         {% elif case.status == 'closed' %}
-        <input type="hidden" name="status" value="active">
+        <input type="hidden" name="status" value="active" style="display:none">
         <button type="submit" class="btn btn-ghost">Reopen</button>
         {% endif %}
       </form>
@@ -233,7 +233,7 @@
         </div>
         <div class="panel-body">
           <form method="post" action="/cases/{{ case.id }}/notes" class="flex gap-3">
-            <input type="hidden" name="source" value="manual">
+            <input type="hidden" name="source" value="manual" style="display:none">
             <textarea name="content" class="input flex-1" rows="2"
                       placeholder="Add an observation, lead, or finding…" required></textarea>
             <button type="submit" class="btn btn-primary" style="align-self:flex-end;flex-shrink:0">Add</button>
