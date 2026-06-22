@@ -1,5 +1,6 @@
 """FastAPI web application — case file dashboard."""
 
+import json
 import re
 import threading
 from datetime import datetime
@@ -18,12 +19,14 @@ from web.database import (
     create_run,
     get_case,
     get_notes,
+    get_notes_since,
     get_run,
     get_runs,
     get_settings,
     init_db,
     list_cases,
     save_settings,
+    set_filer_state,
     update_case_status,
     update_run,
 )
@@ -209,13 +212,43 @@ def _finding_status(runs: list, has_finding: bool, contradictions: int) -> dict:
             "basis": "signed by Oracle, no contradictions on record"}
 
 
+def _make_task_callback(case_id: int, run_id: int):
+    """Returns a task_callback that logs filer milestones and updates filer_state."""
+    _SEQUENCE = ["infiltrator", "ghost", "nexus", "oracle"]
+    _MSGS = {
+        "infiltrator": "Infiltrator filed the source map.",
+        "ghost":       "Ghost extracted and filed the record.",
+        "nexus":       "Nexus filed the analysis. Board marked.",
+        "oracle":      "Oracle signed the file.",
+    }
+    completed = [0]
+    state: dict = {}
+
+    def callback(output):
+        try:
+            idx = completed[0]
+            filer = _SEQUENCE[min(idx, 3)]
+            raw = getattr(output, "raw", None) or getattr(output, "result", None) or str(output)
+            url_count = len(re.findall(r"https?://", raw or ""))
+            state[filer] = {"status": "complete", "items": url_count, "summary": _MSGS[filer]}
+            set_filer_state(run_id, state)
+            add_note(case_id=case_id, content=_MSGS[filer], source="unit", agent=filer)
+        except Exception:
+            pass
+        finally:
+            completed[0] += 1
+
+    return callback
+
+
 def _run_research_background(case_id: int, run_id: int, topic: str, scope: str) -> None:
     """Runs the CrewAI pipeline in a background thread."""
     try:
         from crew import build_crew
         from memory.persistent_memory import get_all_sources
 
-        crew = build_crew(topic=topic, scope=scope, case_id=case_id)
+        task_cb = _make_task_callback(case_id, run_id)
+        crew = build_crew(topic=topic, scope=scope, case_id=case_id, task_callback=task_cb)
         crew.kickoff(inputs={"topic": topic, "scope": scope})
 
         sources = get_all_sources(topic=topic)
@@ -373,12 +406,38 @@ async def run_status(case_id: int, run_id: int):
     run = get_run(run_id)
     if not run:
         return JSONResponse({"status": "unknown"})
+
+    # Per-filer state
+    filer_state: dict = {}
+    raw_state = run.get("filer_state") or "{}"
+    try:
+        filer_state = json.loads(raw_state)
+    except Exception:
+        pass
+
+    # Recent log lines (unit notes written during this run)
+    log_lines: list = []
+    run_started = run.get("started_at") or ""
+    if run_started:
+        try:
+            notes = get_notes_since(case_id, run_started, limit=25)
+            for n in notes:  # newest first; JS will reverse
+                log_lines.append({
+                    "ts":    (n.get("created_at") or "")[:19].replace("T", " "),
+                    "agent": (n.get("agent") or "unit").lower(),
+                    "msg":   (n.get("content") or "")[:120],
+                })
+        except Exception:
+            pass
+
     return JSONResponse({
-        "status": run["status"],
-        "sources_found": run["sources_found"],
+        "status":         run["status"],
+        "sources_found":  run["sources_found"],
         "findings_count": run["findings_count"],
-        "completed_at": run["completed_at"],
-        "error": run["error"],
+        "completed_at":   run["completed_at"],
+        "error":          run["error"],
+        "filer_state":    filer_state,
+        "log_lines":      log_lines,
     })
 
 

@@ -83,6 +83,11 @@ def init_db() -> None:
             if col not in existing:
                 con.execute(f"ALTER TABLE cases ADD COLUMN {col} TEXT DEFAULT {default}")
 
+        # ── Migrations — add filer_state column to research_runs ─────────────
+        run_existing = {r["name"] for r in con.execute("PRAGMA table_info(research_runs)").fetchall()}
+        if "filer_state" not in run_existing:
+            con.execute("ALTER TABLE research_runs ADD COLUMN filer_state TEXT DEFAULT '{}'")
+
 
 def _next_case_number() -> str:
     with db() as con:
@@ -231,6 +236,25 @@ def get_run(run_id: int) -> dict | None:
             "SELECT * FROM research_runs WHERE id=?", (run_id,)
         ).fetchone()
     return dict(row) if row else None
+
+
+def set_filer_state(run_id: int, state: dict) -> None:
+    """Store per-filer progress JSON on the run record."""
+    with db() as con:
+        con.execute(
+            "UPDATE research_runs SET filer_state=? WHERE id=?",
+            (json.dumps(state), run_id),
+        )
+
+
+def get_notes_since(case_id: int, after_ts: str, limit: int = 30) -> list[dict]:
+    """Get notes created after a given ISO timestamp, newest first."""
+    with db() as con:
+        rows = con.execute(
+            "SELECT * FROM notes WHERE case_id=? AND created_at>? ORDER BY created_at DESC LIMIT ?",
+            (case_id, after_ts, limit),
+        ).fetchall()
+    return [dict(r) for r in rows]
 
 
 _SETTINGS_DEFAULTS: dict[str, str] = {

@@ -24,6 +24,19 @@
 {% endblock %}
 
 {% block head_styles %}
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+@keyframes card-glow {
+  0%, 100% { box-shadow: 0 0 30px rgba(74,222,128,0.07), inset 0 0 40px rgba(74,222,128,0.025); }
+  50%       { box-shadow: 0 0 52px rgba(74,222,128,0.15), inset 0 0 60px rgba(74,222,128,0.055); }
+}
+@keyframes act-appear {
+  from { opacity: 0; }
+  to   { opacity: 0.7; }
+}
+
 body.ops-mode {
   background-color: var(--ops-room);
   background-image:
@@ -53,34 +66,39 @@ body.ops-mode::after {
   box-shadow: 0 1px 12px rgba(0,0,0,0.4);
 }
 
+/* 4-col layout: all filers in one row, log + metrics below */
 .ops-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   padding: 24px 56px;
 }
-@media (max-width: 960px) {
+@media (max-width: 1100px) {
   .ops-grid { grid-template-columns: repeat(2, 1fr); }
-  .ops-log-panel { grid-column: span 2; }
+  .ops-log-panel { grid-column: span 1 !important; }
+  .ops-metrics-panel { display: none; }
 }
 @media (max-width: 600px) {
   .ops-grid { grid-template-columns: 1fr; padding: 18px; }
-  .ops-log-panel { grid-column: span 1; }
   .ops-subject-band { padding: 14px 18px; }
-  .ops-footer { padding: 14px 18px; flex-direction: column; align-items: flex-start; gap: 12px; }
+  .ops-footer { padding: 14px 18px !important; flex-direction: column; align-items: flex-start; gap: 12px; }
 }
 
+/* Filer card */
 .ops-card {
   background: var(--ops-panel);
   border: 0.5px solid var(--ops-green-deep);
   border-top: 2px solid var(--ops-green-deep);
   opacity: 0;
   transform: translateY(16px);
-  transition: opacity 0.45s ease, transform 0.45s ease, border-top-color 0.3s, opacity 0.3s;
+  transition: opacity 0.45s ease, transform 0.45s ease, border-top-color 0.3s;
 }
 .ops-card.arrived { opacity: 1; transform: translateY(0); }
-.ops-card.active  { border-top-color: var(--ops-green); box-shadow: 0 0 30px rgba(74,222,128,0.07), inset 0 0 40px rgba(74,222,128,0.025); }
-.ops-card.dim     { opacity: 0.35; }
+.ops-card.active  {
+  border-top-color: var(--ops-green);
+  animation: card-glow 2.8s ease-in-out infinite;
+}
+.ops-card.dim { opacity: 0.28; }
 
 .ops-card-head {
   padding: 12px 14px 10px;
@@ -95,29 +113,76 @@ body.ops-mode::after {
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  color: var(--ops-green-body);
   flex: 1;
 }
 .ops-card-body { padding: 12px 14px; }
-.ops-status {
+
+/* Filer status dot */
+.ops-filer-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ops-green-deep);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.ops-filer-dot.pulsing {
+  background: var(--ops-green);
+  animation: live-pulse 1.4s ease-in-out infinite;
+}
+.ops-filer-dot.done { background: var(--filer-oracle-tint); }
+
+/* Current task */
+.ops-task-label {
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--ops-green-body);
-  margin-bottom: 8px;
+  line-height: 1.5;
+  margin-bottom: 10px;
   min-height: 15px;
-}
-.ops-activity {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ops-green-mid);
-  line-height: 1.8;
-  min-height: 52px;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+/* Counter grid */
+.ops-counters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 0.5px solid var(--ops-green-deep);
+  margin-bottom: 10px;
+}
+.ops-counter { padding: 8px 10px; }
+.ops-counter + .ops-counter { border-left: 0.5px solid var(--ops-green-deep); }
+.ops-counter-val {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--ops-green);
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  margin-bottom: 2px;
+  transition: color 0.3s;
+}
+.ops-counter-val.dim { color: var(--ops-green-deep); }
+.ops-counter-lbl {
+  font-family: var(--font-sans);
+  font-size: 7px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ops-green-mid);
+}
+
+/* Progress bar */
 .ops-bar-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
+  margin-bottom: 8px;
 }
 .ops-bar-track {
   flex: 1;
@@ -135,15 +200,26 @@ body.ops-mode::after {
   font-family: var(--font-mono);
   font-size: 9px;
   color: var(--ops-green-mid);
-  min-width: 28px;
+  min-width: 32px;
   text-align: right;
 }
 
-/* Log panel */
+/* Last action */
+.ops-last-action {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--ops-green-mid);
+  min-height: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Operations log — spans 3 cols at desktop */
 .ops-log-panel {
   background: var(--ops-panel);
   border: 0.5px solid var(--ops-green-deep);
-  grid-column: span 2;
+  grid-column: span 3;
   opacity: 0;
   transition: opacity 0.45s ease;
 }
@@ -157,7 +233,7 @@ body.ops-mode::after {
 }
 .ops-log-body {
   padding: 10px 14px;
-  height: 160px;
+  height: 180px;
   overflow-y: auto;
   display: flex;
   flex-direction: column-reverse;
@@ -171,9 +247,10 @@ body.ops-mode::after {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.ops-log-line .ts { color: var(--ops-green-mid); margin-right: 6px; }
+.ops-log-line .ts  { color: var(--ops-green-mid); margin-right: 6px; }
+.ops-log-line .ag  { color: var(--ops-green-mid); margin-right: 3px; }
 
-/* Metrics panel */
+/* Metrics panel — 1 col */
 .ops-metrics-panel {
   background: var(--ops-panel);
   border: 0.5px solid var(--ops-green-deep);
@@ -211,12 +288,6 @@ body.ops-mode::after {
   align-items: center;
   justify-content: space-between;
   margin-top: 8px;
-}
-
-/* CSS fallback: text fades in after 1.5s if JS hasn't run yet */
-@keyframes act-appear {
-  from { opacity: 0; }
-  to   { opacity: 0.7; }
 }
 
 /* Activation overlay */
@@ -271,7 +342,7 @@ body.ops-mode::after {
 }
 #begin-btn.visible { opacity: 1; animation: none; }
 
-/* Exit transition — binding overlay */
+/* Binding overlay */
 #binding-overlay {
   position: fixed;
   inset: 0;
@@ -352,6 +423,13 @@ body.ops-mode::after {
 <!-- Operations grid -->
 <div class="ops-grid">
 
+  {% set filer_meta = {
+    "infiltrator": ("sources", "mapped"),
+    "ghost":       ("fetched", "filed"),
+    "nexus":       ("entities", "linked"),
+    "oracle":      ("claims",   "cited"),
+  } %}
+
   {% set filers = [
     ("01", "Infiltrator", "infiltrator"),
     ("02", "Ghost",       "ghost"),
@@ -360,33 +438,47 @@ body.ops-mode::after {
   ] %}
 
   {% for num, name, key in filers %}
+  {% set meta = filer_meta[key] %}
   <div class="ops-card" id="card-{{ key }}">
     <div class="ops-card-head">
       <div class="badge badge-{{ key }}">{{ num }}</div>
-      <span class="ops-card-name" style="color:var(--ops-green-body)">{{ name }}</span>
-      <span style="font-family:var(--font-mono);font-size:9px;color:var(--ops-green-mid)" id="status-{{ key }}">○ standby</span>
+      <span class="ops-card-name">{{ name }}</span>
+      <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+        <span class="ops-filer-dot" id="dot-{{ key }}"></span>
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--ops-green-mid)" id="status-{{ key }}">standby</span>
+      </div>
     </div>
     <div class="ops-card-body">
-      <div class="ops-status" id="activity-{{ key }}">—</div>
-      <div class="ops-activity" id="log-{{ key }}"></div>
+      <div class="ops-task-label" id="activity-{{ key }}">Awaiting activation</div>
+      <div class="ops-counters">
+        <div class="ops-counter">
+          <span class="ops-counter-val dim" id="found-{{ key }}">—</span>
+          <span class="ops-counter-lbl">{{ meta[0] }}</span>
+        </div>
+        <div class="ops-counter">
+          <span class="ops-counter-val dim" id="filed-{{ key }}">—</span>
+          <span class="ops-counter-lbl">{{ meta[1] }}</span>
+        </div>
+      </div>
       <div class="ops-bar-row">
         <div class="ops-bar-track"><div class="ops-bar-fill" id="bar-{{ key }}"></div></div>
-        <span class="ops-bar-pct" id="pct-{{ key }}">0%</span>
+        <span class="ops-bar-pct" id="pct-{{ key }}">—</span>
       </div>
+      <div class="ops-last-action" id="log-{{ key }}">—</div>
     </div>
   </div>
   {% endfor %}
 
-  <!-- Operations log — spans 2 columns -->
+  <!-- Operations log — spans 3 cols -->
   <div class="ops-log-panel" id="ops-log-panel">
     <div class="ops-log-head">
       <span style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--ops-green-mid)">Operations log</span>
-      <div class="live-dot"></div>
+      <div style="width:5px;height:5px;border-radius:50%;background:var(--ops-green);animation:live-pulse 1.4s ease-in-out infinite"></div>
     </div>
     <div class="ops-log-body" id="ops-log-body"></div>
   </div>
 
-  <!-- Metrics panel -->
+  <!-- Metrics panel — 1 col -->
   <div class="ops-metrics-panel" id="ops-metrics-panel">
     <div class="ops-metric-block">
       <div class="ops-metric-label">Items filed</div>
@@ -432,7 +524,7 @@ function fmtElapsed(ms) {
   const p = n => String(n).padStart(2, '0');
   return h > 0 ? `${p(h)}:${p(m)}:${p(ss)}` : `${p(m)}:${p(ss)}`;
 }
-function fmtSources(n) { return String(n).padStart(4, '0'); }
+function fmtSources(n) { return String(Math.max(0, n)).padStart(4, '0'); }
 function tickElapsed() {
   const elapsed = Date.now() - startMs;
   document.getElementById('elapsed-clock').textContent = fmtElapsed(elapsed);
@@ -440,33 +532,33 @@ function tickElapsed() {
 }
 setInterval(tickElapsed, 1000);
 
-// ── Filer synthetic activity ───────────────────────────────────────────────
-// Approximate pipeline stage from elapsed seconds (each filer ~3-5 min)
-const STAGE_DURATION = 240; // seconds per stage estimate
-const FILER_ORDER = ['infiltrator','ghost','nexus','oracle'];
+// ── Filer config ───────────────────────────────────────────────────────────
+const STAGE_DURATION = 240; // seconds per filer (estimate)
+const FILER_ORDER = ['infiltrator', 'ghost', 'nexus', 'oracle'];
+
 const FILER_LOGS = {
   infiltrator: [
     'Entered Common Crawl index.',
     'Running search operators on subject.',
-    'Government document portals searched.',
+    'Government document portals queried.',
     'GitHub repository scan complete.',
     'ArXiv and Semantic Scholar queried.',
     'Paste site sweep done.',
     'Reddit community threads located.',
-    'Source map building. %N candidates.',
+    'Source map building — %N candidates.',
     'Wayback index cross-referenced.',
     'Source map filed to memory.',
   ],
   ghost: [
     'Loading source map from memory.',
     'Extracting live pages.',
-    'Wayback fetch attempted on archived URLs.',
+    'Wayback fetch on archived URLs.',
     'Recovered %N snapshots.',
     'Following embedded document links.',
     'PDF extraction in progress.',
     'RSS feeds parsed.',
     'Inaccessible sources noted.',
-    'All recovered content stored to memory.',
+    'All recovered content stored.',
     'Ghost filed the record.',
   ],
   nexus: [
@@ -474,11 +566,11 @@ const FILER_LOGS = {
     'Pinning named entities.',
     'Building chronological timeline.',
     'Mapping organisational relationships.',
-    'Cross-referencing sources for corroboration.',
+    'Cross-referencing for corroboration.',
     'Marking contradictions on record.',
     'Applying confidence tiers.',
     'Identifying gaps in the record.',
-    'Analysis complete. %N entities confirmed.',
+    'Analysis complete — %N entities.',
     'Nexus filed the board.',
   ],
   oracle: [
@@ -494,83 +586,168 @@ const FILER_LOGS = {
     'File bound.',
   ],
 };
-const FILER_STATUS = {
-  infiltrator: '▸ on the floor',
-  ghost:       '▸ on the floor',
-  nexus:       '▸ at the board',
-  oracle:      '▸ writing the finding',
+
+const FILER_STATUS_ACTIVE = {
+  infiltrator: 'on the floor',
+  ghost:       'on the floor',
+  nexus:       'at the board',
+  oracle:      'writing the finding',
 };
-const STANDBY_STATUS = {
-  infiltrator: '○ standing by',
-  ghost:       '○ standing by',
-  nexus:       '○ at the board',
-  oracle:      '○ at her desk',
+const FILER_STATUS_STANDBY = {
+  infiltrator: 'standing by',
+  ghost:       'standing by',
+  nexus:       'at the board',
+  oracle:      'at her desk',
+};
+
+// Synthetic counter scales (items each filer processes)
+const FOUND_SCALE = { infiltrator: 470, ghost: 280, nexus: 90, oracle: 40 };
+const FILED_SCALE = { infiltrator: 380, ghost: 230, nexus: 72, oracle: 32 };
+
+const fc = {
+  infiltrator: { found: 0, filed: 0, locked: false },
+  ghost:       { found: 0, filed: 0, locked: false },
+  nexus:       { found: 0, filed: 0, locked: false },
+  oracle:      { found: 0, filed: 0, locked: false },
 };
 
 function fakeN() { return Math.floor(Math.random() * 900 + 100); }
 
-// ── Log panel ──────────────────────────────────────────────────────────────
+// ── Operations log ─────────────────────────────────────────────────────────
 const logLines = [];
-function addLog(msg) {
+const seenKeys = new Set();
+
+function addLog(msg, ts, agent) {
   const now = new Date();
-  const p = n => String(n).padStart(2,'0');
-  const ts = `${p(now.getUTCHours())}:${p(now.getUTCMinutes())}:${p(now.getUTCSeconds())}`;
-  logLines.unshift({ ts, msg });
-  if (logLines.length > 40) logLines.pop();
+  const p = n => String(n).padStart(2, '0');
+  const stamp = ts || `${p(now.getUTCHours())}:${p(now.getUTCMinutes())}:${p(now.getUTCSeconds())}`;
+  const key = stamp + '|' + msg;
+  if (seenKeys.has(key)) return;
+  seenKeys.add(key);
+  logLines.unshift({ ts: stamp, msg, agent: agent || '' });
+  if (logLines.length > 60) logLines.pop();
   const body = document.getElementById('ops-log-body');
-  body.innerHTML = logLines.map(l =>
-    `<div class="ops-log-line"><span class="ts">${l.ts}</span>${l.msg}</div>`
-  ).join('');
+  body.innerHTML = logLines.map(l => {
+    const ag = l.agent ? `<span class="ag">${l.agent} ·</span> ` : '';
+    return `<div class="ops-log-line"><span class="ts">${l.ts}</span>${ag}${l.msg}</div>`;
+  }).join('');
 }
 
-// ── Synthetic activity ticker ──────────────────────────────────────────────
-let logTickIdx = { infiltrator:0, ghost:0, nexus:0, oracle:0 };
-let sourcesCount = 0;
-function updateFilerCards(elapsed) {
-  const stage = Math.floor(elapsed / STAGE_DURATION);
+// ── Real server log integration ────────────────────────────────────────────
+function updateRealLog(logLineData) {
+  if (!Array.isArray(logLineData) || !logLineData.length) return;
+  // Server sends newest-first; reverse to add oldest first
+  [...logLineData].reverse().forEach(l => {
+    const agent = (l.agent || 'unit').toLowerCase();
+    const ts = l.ts ? l.ts.slice(11, 19) : undefined;
+    addLog(l.msg, ts, agent);
+    // Update the filer's last-action line
+    if (FILER_ORDER.includes(agent)) {
+      const el = document.getElementById(`log-${agent}`);
+      if (el) el.textContent = (l.msg || '').slice(0, 64);
+    }
+  });
+}
+
+// ── Filer card rendering ───────────────────────────────────────────────────
+function setCounters(filer, found, filed) {
+  const fe = document.getElementById(`found-${filer}`);
+  const le = document.getElementById(`filed-${filer}`);
+  if (found !== null) { fe.textContent = found; fe.classList.remove('dim'); }
+  if (filed !== null) { le.textContent = filed; le.classList.remove('dim'); }
+}
+
+function setFilerComplete(filer, summary, items) {
+  const card  = document.getElementById(`card-${filer}`);
+  const dot   = document.getElementById(`dot-${filer}`);
+  const stEl  = document.getElementById(`status-${filer}`);
+  const actEl = document.getElementById(`activity-${filer}`);
+  const barEl = document.getElementById(`bar-${filer}`);
+  const pctEl = document.getElementById(`pct-${filer}`);
+
+  card.classList.remove('active', 'dim');
+  card.classList.add('arrived');
+  dot.classList.remove('pulsing');
+  dot.classList.add('done');
+  stEl.textContent = 'filed';
+  stEl.style.color = 'var(--filer-oracle-tint)';
+  barEl.style.width = '100%';
+  pctEl.textContent = '100%';
+  actEl.textContent = summary;
+  actEl.style.color = 'var(--ops-green-mid)';
+
+  if (!fc[filer].locked && items > 0) {
+    fc[filer].found = items;
+    fc[filer].filed = Math.floor(items * 0.8);
+    fc[filer].locked = true;
+    setCounters(filer, fc[filer].found, fc[filer].filed);
+  } else if (!fc[filer].locked) {
+    fc[filer].found = Math.floor(FOUND_SCALE[filer] * (0.85 + Math.random() * 0.3));
+    fc[filer].filed = Math.floor(fc[filer].found * (0.72 + Math.random() * 0.18));
+    fc[filer].locked = true;
+    setCounters(filer, fc[filer].found, fc[filer].filed);
+  }
+}
+
+function updateFilerCards(elapsed, filerState) {
+  filerState = filerState || {};
+  const stage    = Math.floor(elapsed / STAGE_DURATION);
   const stagePct = Math.min(((elapsed % STAGE_DURATION) / STAGE_DURATION) * 100, 100);
 
   FILER_ORDER.forEach((filer, i) => {
-    const card = document.getElementById(`card-${filer}`);
-    const statusEl = document.getElementById(`status-${filer}`);
+    const card  = document.getElementById(`card-${filer}`);
+    const dot   = document.getElementById(`dot-${filer}`);
+    const stEl  = document.getElementById(`status-${filer}`);
     const actEl = document.getElementById(`activity-${filer}`);
     const barEl = document.getElementById(`bar-${filer}`);
     const pctEl = document.getElementById(`pct-${filer}`);
-    const logEl = document.getElementById(`log-${filer}`);
 
-    if (i < stage) {
-      // Completed
-      card.classList.remove('active'); card.classList.add('arrived');
-      statusEl.textContent = '✓ filed';
-      statusEl.style.color = 'var(--filer-oracle-tint)';
-      barEl.style.width = '100%'; pctEl.textContent = '100%';
-      actEl.textContent = FILER_LOGS[filer][FILER_LOGS[filer].length - 1];
+    const real = filerState[filer];
+
+    if (real && real.status === 'complete') {
+      setFilerComplete(filer, real.summary, real.items || 0);
+
+    } else if (i < stage) {
+      setFilerComplete(filer, FILER_LOGS[filer][FILER_LOGS[filer].length - 1], 0);
+
     } else if (i === stage) {
-      // Active
-      card.classList.add('active','arrived'); card.classList.remove('dim');
-      statusEl.textContent = FILER_STATUS[filer];
-      statusEl.style.color = 'var(--ops-green)';
-      const pct = Math.round(stagePct);
-      barEl.style.width = pct + '%'; pctEl.textContent = pct + '%';
+      card.classList.add('active', 'arrived');
+      card.classList.remove('dim');
+      dot.classList.add('pulsing');
+      dot.classList.remove('done');
+      stEl.textContent = FILER_STATUS_ACTIVE[filer];
+      stEl.style.color = 'var(--ops-green)';
 
-      // Rotate log lines every ~18s
-      const lineIdx = Math.min(Math.floor((elapsed % STAGE_DURATION) / 18), FILER_LOGS[filer].length - 1);
-      const line = FILER_LOGS[filer][lineIdx].replace('%N', fakeN());
-      actEl.textContent = line;
+      const pct = Math.round(stagePct);
+      barEl.style.width = pct + '%';
+      pctEl.textContent = pct + '%';
+
+      const lineIdx = Math.min(Math.floor((elapsed % STAGE_DURATION) / 24), FILER_LOGS[filer].length - 1);
+      actEl.textContent = FILER_LOGS[filer][lineIdx].replace('%N', fakeN());
+      actEl.style.color = 'var(--ops-green-body)';
+
+      const tFound = Math.floor(FOUND_SCALE[filer] * pct / 100);
+      const tFiled = Math.floor(FILED_SCALE[filer] * pct / 100);
+      if (tFound > fc[filer].found) { fc[filer].found = tFound; setCounters(filer, tFound, null); }
+      if (tFiled > fc[filer].filed) { fc[filer].filed = tFiled; setCounters(filer, null, tFiled); }
+
     } else {
-      // Standby
-      card.classList.add('arrived'); card.classList.remove('active','dim');
-      statusEl.textContent = STANDBY_STATUS[filer];
-      statusEl.style.color = 'var(--ops-green-mid)';
-      barEl.style.width = '0%'; pctEl.textContent = '0%';
+      card.classList.add('arrived');
+      card.classList.remove('active', 'dim');
+      dot.classList.remove('pulsing', 'done');
+      stEl.textContent = FILER_STATUS_STANDBY[filer];
+      stEl.style.color = 'var(--ops-green-mid)';
+      barEl.style.width = '0%';
+      pctEl.textContent = '—';
+      actEl.textContent = i === stage + 1 ? 'On deck' : 'Awaiting orders';
+      actEl.style.color = 'var(--ops-green-mid)';
     }
   });
 
-  // Update sources metric
-  if (stage >= 1) {
-    sourcesCount = Math.min(stage * 12 + Math.floor(stagePct / 8), 999);
-    document.getElementById('metric-sources').textContent = fmtSources(sourcesCount);
-  }
+  // Global metric
+  let total = 0;
+  FILER_ORDER.forEach(f => { total += fc[f].filed; });
+  if (total > 0) document.getElementById('metric-sources').textContent = fmtSources(total);
 }
 
 // ── Activation sequence ────────────────────────────────────────────────────
@@ -584,51 +761,33 @@ function dismissOverlay() {
   document.getElementById('seal-label').textContent = 'ROOM SEALED';
   document.getElementById('ops-log-panel').classList.add('arrived');
   document.getElementById('ops-metrics-panel').classList.add('arrived');
-  addLog('Room sealed. Unit is on the floor.');
-  addLog(`Case ${CASE_ID} opened. All four filers convened.`);
+  addLog('Room sealed. Unit is on the floor.', null, 'unit');
+  addLog('Case ' + CASE_ID + ' opened. Four filers convened.', null, 'unit');
 }
 
 function runActivationSequence() {
-  const overlay = document.getElementById('activation-overlay');
-
-  // Beat 1 (0s): "The unit has been convened."
-  setTimeout(() => {
-    document.getElementById('act-convened').classList.add('visible');
-  }, 100);
-
-  // Beat 2 (0.6s): Case number + subject
+  setTimeout(() => { document.getElementById('act-convened').classList.add('visible'); }, 100);
   setTimeout(() => {
     document.getElementById('act-case-num').classList.add('visible');
     document.getElementById('act-recorded').classList.add('visible');
   }, 600);
 
-  // Beat 3–6 (1.2–4.2s): Filer cards arrive
-  const cardKeys = ['infiltrator','ghost','nexus','oracle'];
-  const arrivalTimes = [1200, 2000, 2800, 3700];
-  cardKeys.forEach((key, i) => {
+  const keys = ['infiltrator','ghost','nexus','oracle'];
+  [1200, 2000, 2800, 3700].forEach((t, i) => {
     setTimeout(() => {
-      document.getElementById(`card-${key}`).classList.add('arrived');
-      if (key === 'oracle') {
-        document.getElementById(`status-${key}`).textContent = '↻ arriving';
-        setTimeout(() => {
-          document.getElementById(`status-${key}`).textContent = STANDBY_STATUS[key];
-        }, 700);
-      } else {
-        document.getElementById(`status-${key}`).textContent = STANDBY_STATUS[key];
-      }
-    }, arrivalTimes[i]);
+      document.getElementById(`card-${keys[i]}`).classList.add('arrived');
+      const stEl = document.getElementById(`status-${keys[i]}`);
+      stEl.textContent = FILER_STATUS_STANDBY[keys[i]];
+      stEl.style.color = 'var(--ops-green-mid)';
+    }, t);
   });
 
-  // Beat 7 (4.3s): "Room sealing…" + skip button
   setTimeout(() => {
     document.getElementById('seal-countdown').classList.add('visible');
     document.getElementById('begin-btn').classList.add('visible');
   }, 4300);
 
-  // Beat 8 (5.5s): Auto-seal
-  setTimeout(() => {
-    dismissOverlay();
-  }, 5500);
+  setTimeout(dismissOverlay, 5500);
 }
 
 // ── Polling ────────────────────────────────────────────────────────────────
@@ -639,19 +798,22 @@ function pollStatus() {
     .then(d => {
       if (d.status === 'running') {
         const elapsed = Math.floor((Date.now() - startMs) / 1000);
-        updateFilerCards(elapsed);
-        // Add a log line occasionally
-        if (Math.random() < 0.3) {
+        updateFilerCards(elapsed, d.filer_state);
+        if (d.log_lines && d.log_lines.length) {
+          updateRealLog(d.log_lines);
+        } else if (Math.random() < 0.35) {
           const stage = Math.min(Math.floor(elapsed / STAGE_DURATION), 3);
           const filer = FILER_ORDER[stage];
-          const pool = FILER_LOGS[filer];
-          const line = pool[Math.floor(Math.random() * pool.length)].replace('%N', fakeN());
-          addLog(`${filer.charAt(0).toUpperCase() + filer.slice(1)} · ${line}`);
+          const pool  = FILER_LOGS[filer];
+          addLog(pool[Math.floor(Math.random() * pool.length)].replace('%N', fakeN()), null, filer);
         }
         setTimeout(pollStatus, 3500);
       } else if (d.status === 'complete') {
+        updateFilerCards(STAGE_DURATION * 4, d.filer_state);
+        if (d.log_lines) updateRealLog(d.log_lines);
         beginExitTransition(d.sources_found || 0);
       } else if (d.status === 'failed') {
+        if (d.log_lines) updateRealLog(d.log_lines);
         showFailure(d.error || 'The unit could not complete the case.');
       }
     })
@@ -662,40 +824,40 @@ function pollStatus() {
 function beginExitTransition(sources) {
   document.getElementById('metric-status').textContent = 'BINDING';
   document.getElementById('seal-label').textContent = 'BINDING';
-  addLog('Unit handed everything to Oracle.');
-  addLog('Oracle · Writing the finding.');
+  addLog('Unit handed everything to Oracle.', null, 'unit');
+  addLog('Oracle is writing the finding.', null, 'oracle');
 
-  // Dim filers 01–03
   ['infiltrator','ghost','nexus'].forEach(key => {
     document.getElementById(`card-${key}`).classList.add('dim');
+    document.getElementById(`dot-${key}`).classList.remove('pulsing');
   });
-  // Amplify Oracle
+
   const oCard = document.getElementById('card-oracle');
   oCard.classList.add('active');
-  document.getElementById('status-oracle').textContent = '▸ writing the finding';
-  document.getElementById('status-oracle').style.color = 'var(--filer-oracle-tint)';
-  document.getElementById('activity-oracle').textContent = 'Oracle is binding the file.';
+  document.getElementById(`dot-oracle`).classList.add('pulsing');
+  document.getElementById(`status-oracle`).textContent = 'writing the finding';
+  document.getElementById(`status-oracle`).style.color = 'var(--filer-oracle-tint)';
+  document.getElementById(`activity-oracle`).textContent = 'Oracle is binding the file.';
+  document.getElementById(`activity-oracle`).style.color = 'var(--filer-oracle-tint)';
 
-  // Show binding overlay after 1.5s
   setTimeout(() => {
     document.getElementById('binding-overlay').classList.add('show');
     const bar = document.getElementById('binding-bar');
     bar.style.transition = 'width 2.2s ease';
     requestAnimationFrame(() => { bar.style.width = '100%'; });
-    setTimeout(() => {
-      window.location.href = `/cases/${CASE_ID}/file`;
-    }, 2400);
+    setTimeout(() => { window.location.href = `/cases/${CASE_ID}/file`; }, 2400);
   }, 1500);
 }
 
 function showFailure(error) {
-  addLog('The unit has paused on this case.');
+  addLog('The unit has paused on this case.', null, 'unit');
   document.getElementById('seal-label').textContent = 'PAUSED';
   document.getElementById('metric-status').textContent = 'PAUSED';
-  FILER_ORDER.forEach(k => document.getElementById(`card-${k}`).classList.add('dim'));
-
-  const footer = document.querySelector('.ops-footer');
-  footer.innerHTML = `
+  FILER_ORDER.forEach(k => {
+    document.getElementById(`card-${k}`).classList.add('dim');
+    document.getElementById(`dot-${k}`).classList.remove('pulsing');
+  });
+  document.querySelector('.ops-footer').innerHTML = `
     <p style="font-family:var(--font-serif);font-style:italic;font-size:13px;color:var(--brass-faded);max-width:600px">
       The unit has paused on this case. The work can resume when the path is open again.
     </p>
@@ -709,26 +871,25 @@ function showFailure(error) {
 
 // ── Init ───────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  // Check if already running (page refresh after initial load)
   if (RUN_ID) {
     fetch(`/cases/${CASE_ID}/runs/${RUN_ID}/status`)
       .then(r => r.json())
       .then(d => {
         if (d.status === 'complete') {
-          // Skip straight to binding
           document.getElementById('activation-overlay').style.display = 'none';
           document.getElementById('ops-log-panel').classList.add('arrived');
           document.getElementById('ops-metrics-panel').classList.add('arrived');
           FILER_ORDER.forEach(k => document.getElementById(`card-${k}`).classList.add('arrived'));
+          if (d.log_lines) updateRealLog(d.log_lines);
           beginExitTransition(d.sources_found || 0);
         } else if (d.status === 'failed') {
           document.getElementById('activation-overlay').style.display = 'none';
           document.getElementById('ops-log-panel').classList.add('arrived');
           document.getElementById('ops-metrics-panel').classList.add('arrived');
           FILER_ORDER.forEach(k => document.getElementById(`card-${k}`).classList.add('arrived'));
+          if (d.log_lines) updateRealLog(d.log_lines);
           showFailure(d.error);
         } else {
-          // Still running — play activation then start polling
           runActivationSequence();
           setTimeout(pollStatus, 6000);
         }
