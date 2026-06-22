@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Tactics — The Casefilers{% endblock %}
+
+{% block head_styles %}
+.tactic-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border-dark);
+  border: 0.5px solid var(--border-dark);
+  margin-top: 32px;
+}
+@media (max-width: 920px) { .tactic-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .tactic-grid { grid-template-columns: 1fr; } }
+
+.tactic-card {
+  background: var(--wood-mid);
+  padding: 22px 24px;
+  transition: background 0.1s;
+}
+.tactic-card:hover { background: #1a1814; }
+
+.tactic-num {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--brass-deepest);
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.tactic-name {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--bone);
+  margin-bottom: 4px;
+}
+.tactic-desc {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--brass-faded);
+  margin-bottom: 16px;
+}
+.tactic-sub-head {
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--brass-deepest);
+  margin-bottom: 6px;
+  margin-top: 12px;
+}
+.tactic-list {
+  list-style: none;
+  padding: 0;
+}
+.tactic-list li {
+  font-family: var(--font-serif);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--bone-body);
+  padding-left: 12px;
+  position: relative;
+  margin-bottom: 4px;
+}
+.tactic-list li::before {
+  content: '▪';
+  position: absolute;
+  left: 0;
+  font-size: 7px;
+  color: var(--brass-deepest);
+  top: 3px;
+}
+.tactic-list.countermeasures li::before { color: var(--filer-nexus-tint); }
+
+.strength-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 0.5px solid;
+}
+.strength-High   { color: var(--filer-infiltrator-tint); border-color: rgba(156,59,58,0.3); }
+.strength-Medium { color: var(--amber); border-color: rgba(212,160,64,0.3); }
+.strength-Low    { color: var(--brass-faded); border-color: var(--border-dark); }
+
+.filter-strip {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin-bottom: 0;
+  border: 0.5px solid var(--border-dark);
+  border-bottom: none;
+}
+.filter-btn {
+  padding: 8px 16px;
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--brass-faded);
+  background: none;
+  border: none;
+  border-right: 0.5px solid var(--border-dark);
+  cursor: pointer;
+  transition: color 0.1s, background 0.1s;
+}
+.filter-btn:last-child { border-right: none; }
+.filter-btn:hover { color: var(--brass); background: var(--wood-mid); }
+.filter-btn.active { color: var(--brass); background: var(--wood-mid); }
+{% endblock %}
+
+{% block content %}
+<div class="page" style="max-width:1200px">
+
+  <!-- Header -->
+  <div style="margin-bottom:32px;padding-bottom:24px;border-bottom:0.5px solid var(--border-dark)">
+    <div style="border-left:2px solid var(--brass-faded);padding-left:20px">
+      <div class="eyebrow" style="margin-bottom:10px;color:var(--brass-muted)">Unit · Intelligence · Manipulation Tactics</div>
+      <h1 style="font-family:var(--font-serif);font-size:34px;font-weight:500;color:var(--bone);margin-bottom:6px;line-height:1.1">
+        DTN Tactics Register
+      </h1>
+      <p style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:var(--brass-faded);max-width:600px;line-height:1.7">
+        Twenty-four documented manipulation tactics. Each entry carries detection signs and countermeasures.
+        Difficulty rating reflects how hard the tactic is to detect when deployed.
+      </p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-4 gap-3" style="margin-bottom:32px">
+    {% for label, val, accent in [
+      ("Tactics on file", tactics | length, "var(--brass)"),
+      ("High difficulty", tactics | selectattr('strength', 'equalto', 'High') | list | length, "var(--filer-infiltrator-tint)"),
+      ("Medium difficulty", tactics | selectattr('strength', 'equalto', 'Medium') | list | length, "var(--amber)"),
+      ("Low difficulty", tactics | selectattr('strength', 'equalto', 'Low') | list | length, "var(--brass-faded)"),
+    ] %}
+    <div class="card" style="padding:18px 22px;border-top:1.5px solid {{ accent }}">
+      <div style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:10px">{{ label }}</div>
+      <div style="font-family:var(--font-serif);font-size:28px;font-weight:500;color:{{ accent }};line-height:1">{{ val }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Filter strip -->
+  <div class="filter-strip" id="filter-strip">
+    <button class="filter-btn active" data-filter="all" onclick="filterTactics('all', this)">All {{ tactics | length }}</button>
+    <button class="filter-btn" data-filter="High" onclick="filterTactics('High', this)">High difficulty</button>
+    <button class="filter-btn" data-filter="Medium" onclick="filterTactics('Medium', this)">Medium difficulty</button>
+    <button class="filter-btn" data-filter="Low" onclick="filterTactics('Low', this)">Low difficulty</button>
+  </div>
+
+  <!-- Tactics grid -->
+  <div class="tactic-grid" id="tactic-grid">
+    {% for t in tactics %}
+    <div class="tactic-card" data-strength="{{ t.strength }}" id="tactic-{{ t.id }}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span class="tactic-num">{{ "%02d"|format(loop.index) }}</span>
+        <span class="strength-badge strength-{{ t.strength }}">{{ t.strength }}</span>
+      </div>
+      <div class="tactic-name">{{ t.name }}</div>
+      <div class="tactic-desc">{{ t.description }}</div>
+
+      <div class="tactic-sub-head">Detection signs</div>
+      <ul class="tactic-list">
+        {% for sign in t.detection %}
+        <li>{{ sign }}</li>
+        {% endfor %}
+      </ul>
+
+      <div class="tactic-sub-head">Countermeasures</div>
+      <ul class="tactic-list countermeasures">
+        {% for cm in t.countermeasures %}
+        <li>{{ cm }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Footer note -->
+  <div style="margin-top:32px;padding-top:20px;border-top:0.5px solid var(--border-dark)">
+    <p style="font-family:var(--font-serif);font-style:italic;font-size:13px;color:var(--brass-faded);max-width:680px;line-height:1.7">
+      These tactics are identified and flagged automatically when Oracle processes a case.
+      Detection strength reflects how difficult the tactic is to identify in practice —
+      not how frequently it is deployed.
+    </p>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterTactics(strength, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tactic-card').forEach(card => {
+    const show = strength === 'all' || card.dataset.strength === strength;
+    card.style.display = show ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

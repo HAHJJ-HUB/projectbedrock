@@ -133,6 +133,7 @@
     </div>
     <div class="case-actions">
       <a href="/cases/{{ case.id }}/file" class="btn btn-primary">View case file ↗</a>
+      <a href="/cases/{{ case.id }}/board" class="btn btn-ghost">Evidence board</a>
       <a href="/cases/{{ case.id }}/analyze" class="btn btn-ghost">Narrative analysis</a>
       <form method="post" action="/cases/{{ case.id }}/status" style="display:inline">
         {% if case.status == 'active' %}

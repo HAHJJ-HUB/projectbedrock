@@ -1,0 +1,535 @@
+{% extends "base.html" %}
+{% block title %}{{ case.case_number }} — Evidence board{% endblock %}
+{% block body_class %}board-mode{% endblock %}
+
+{% block masthead %}
+<nav style="background:var(--wood-deepest);border-top:1px solid rgba(184,168,122,0.06);border-bottom:0.5px solid var(--border-dark);box-shadow:0 2px 28px rgba(0,0,0,0.8);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200">
+  <div style="display:flex;align-items:center;gap:14px">
+    <a href="/cases/{{ case.id }}" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--brass-faded);font-family:var(--font-sans);font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;transition:color 0.1s"
+       onmouseover="this.style.color='var(--brass)'" onmouseout="this.style.color='var(--brass-faded)'">
+      ← Leave the board
+    </a>
+    <div style="width:0.5px;height:16px;background:var(--border-dark)"></div>
+    <span style="font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--brass);letter-spacing:0.08em">{{ case.case_number }}</span>
+    <span style="font-family:var(--font-serif);font-style:italic;font-size:13px;color:var(--brass-faded)">{{ case.name }}</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px" id="board-toolbar">
+    <div style="display:flex;align-items:center;gap:1px;border:0.5px solid var(--border-dark)">
+      <button class="board-filter-btn active" data-type="all" onclick="setFilter('all',this)">All</button>
+      <button class="board-filter-btn" data-type="person" onclick="setFilter('person',this)">People</button>
+      <button class="board-filter-btn" data-type="organisation" onclick="setFilter('organisation',this)">Orgs</button>
+      <button class="board-filter-btn" data-type="source" onclick="setFilter('source',this)">Sources</button>
+      <button class="board-filter-btn" data-type="contradiction" onclick="setFilter('contradiction',this)">Contradictions</button>
+    </div>
+    <div style="width:0.5px;height:16px;background:var(--border-dark)"></div>
+    <span style="font-family:var(--font-mono);font-size:9px;color:var(--brass-faded)" id="board-count">—</span>
+    <div style="width:0.5px;height:16px;background:var(--border-dark)"></div>
+    <button onclick="resetPositions()" style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--brass-faded);background:none;border:none;cursor:pointer;transition:color 0.1s;padding:0"
+       onmouseover="this.style.color='var(--brass)'" onmouseout="this.style.color='var(--brass-faded)'">Reset layout</button>
+  </div>
+</nav>
+{% endblock %}
+
+{% block head_styles %}
+body.board-mode {
+  background-color: #0D0B09;
+  background-image:
+    radial-gradient(ellipse 100% 50% at 50% -5%, #1C1712 0%, transparent 55%),
+    radial-gradient(ellipse 55% 55% at 0% 100%, #080604 0%, transparent 40%),
+    radial-gradient(ellipse 55% 55% at 100% 100%, #080604 0%, transparent 40%);
+  overflow: hidden;
+}
+
+/* Board scroll container */
+.board-scroll {
+  width: 100%;
+  height: calc(100vh - 56px);
+  overflow: auto;
+  cursor: default;
+  position: relative;
+}
+.board-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+.board-scroll::-webkit-scrollbar-track { background: transparent; }
+.board-scroll::-webkit-scrollbar-thumb { background: var(--border-dark); }
+
+/* Canvas — where cards live */
+.board-canvas {
+  position: relative;
+  min-width: 1600px;
+  min-height: 1100px;
+}
+
+/* SVG connection overlay */
+#board-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Cards */
+.board-card {
+  position: absolute;
+  width: 180px;
+  background: var(--paper);
+  cursor: grab;
+  z-index: 2;
+  box-shadow: 2px 4px 16px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(0,0,0,0.2);
+  user-select: none;
+  transform-origin: center top;
+  transition: box-shadow 0.12s;
+}
+.board-card:active { cursor: grabbing; }
+.board-card.dragging {
+  box-shadow: 6px 10px 32px rgba(0,0,0,0.8), 0 0 0 0.5px rgba(0,0,0,0.3);
+  z-index: 50;
+  transform: rotate(0deg) !important;
+}
+.board-card.hidden { display: none; }
+
+/* Pin dot — top centre, slightly above card */
+.board-pin {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.board-card-body { padding: 16px 13px 12px; }
+
+.board-card-type {
+  font-family: var(--font-sans);
+  font-size: 7px; font-weight: 500;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ink-faded);
+  margin-bottom: 7px;
+}
+
+.board-card-label {
+  font-family: var(--font-serif);
+  font-size: 13px; font-weight: 500;
+  line-height: 1.3;
+  color: var(--ink);
+  margin-bottom: 5px;
+  word-break: break-word;
+}
+
+.board-card-detail {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+  word-break: break-word;
+}
+
+.board-card-source {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--filer-ghost);
+  margin-top: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Contradiction card — slightly wider */
+.board-card.board-card-contradiction { width: 210px; }
+.board-card-vs {
+  font-family: var(--font-sans);
+  font-size: 7px; font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--contradiction);
+  text-align: center;
+  padding: 4px 0;
+  border-top: 0.5px solid var(--paper-border);
+  border-bottom: 0.5px solid var(--paper-border);
+  margin: 6px 0;
+}
+.board-card-account {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 9px;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+
+/* Section labels on the board */
+.board-section-label {
+  position: absolute;
+  font-family: var(--font-sans);
+  font-size: 8px; font-weight: 500;
+  letter-spacing: 0.25em; text-transform: uppercase;
+  color: rgba(74,69,56,0.5);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Filter toolbar buttons */
+.board-filter-btn {
+  padding: 6px 14px;
+  font-family: var(--font-sans);
+  font-size: 8px; font-weight: 500;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--brass-faded);
+  background: none;
+  border: none;
+  border-right: 0.5px solid var(--border-dark);
+  cursor: pointer;
+  transition: color 0.1s, background 0.1s;
+}
+.board-filter-btn:last-child { border-right: none; }
+.board-filter-btn:hover { color: var(--brass); background: var(--wood-mid); }
+.board-filter-btn.active { color: var(--bone); background: var(--wood-mid); }
+
+/* Empty state */
+.board-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Loading state */
+#board-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+{% endblock %}
+
+{% block content %}
+<!-- Board scroll wrapper -->
+<div class="board-scroll" id="board-scroll">
+  <div class="board-canvas" id="board-canvas">
+
+    <!-- SVG connection layer -->
+    <svg id="board-svg"></svg>
+
+    <!-- Loading state -->
+    <div id="board-loading">
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--brass-deepest);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:8px">Building the board…</div>
+      <div style="width:120px;height:1px;background:var(--border-dark);margin:0 auto">
+        <div style="height:100%;background:var(--brass-faded);animation:board-load 1.4s ease-in-out infinite" id="load-bar"></div>
+      </div>
+    </div>
+
+    <!-- Cards injected here by JS -->
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+@keyframes board-load {
+  0%   { width: 0%; opacity: 1; }
+  50%  { width: 100%; opacity: 0.6; }
+  100% { width: 0%; opacity: 0; }
+}
+</style>
+<script>
+const CASE_ID = {{ case.id }};
+const STORAGE_KEY = `board-pos-${CASE_ID}`;
+
+// Card pin colors per type
+const PIN_COLORS = {
+  person:        'var(--filer-infiltrator)',
+  organisation:  'var(--filer-ghost)',
+  source:        'var(--filer-nexus)',
+  contradiction: 'var(--amber)',
+};
+
+// Default layout columns (x base per type)
+const LAYOUT_BASE = {
+  person:        { x: 80,   y: 90  },
+  organisation:  { x: 340,  y: 90  },
+  source:        { x: 640,  y: 90  },
+  contradiction: { x: 980,  y: 90  },
+};
+const CARD_ROW_H = 220;
+const CARD_COLS = 2;
+
+let allCards = [];
+let positions = {};
+let activeFilter = 'all';
+
+// ── Position persistence ────────────────────────────────────────────────────
+function loadPositions() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { return {}; }
+}
+function savePositions() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(positions)); } catch {}
+}
+
+// ── Default position ────────────────────────────────────────────────────────
+function defaultPos(type, indexInType) {
+  const base = LAYOUT_BASE[type] || LAYOUT_BASE.source;
+  const col = indexInType % CARD_COLS;
+  const row = Math.floor(indexInType / CARD_COLS);
+  // Deterministic jitter using sin/cos
+  const jX = Math.round(Math.sin(indexInType * 2.17) * 18);
+  const jY = Math.round(Math.cos(indexInType * 1.73) * 14);
+  return {
+    x: base.x + col * 210 + jX,
+    y: base.y + row * CARD_ROW_H + jY,
+  };
+}
+
+// ── Default rotation ────────────────────────────────────────────────────────
+function defaultRotation(index) {
+  return +(Math.sin(index * 1.618) * 2.8).toFixed(2);
+}
+
+// ── Build a card element ────────────────────────────────────────────────────
+function buildCard(data, indexInType, globalIndex) {
+  const el = document.createElement('div');
+  el.className = `board-card board-card-${data.type}`;
+  el.id = `card-${data.id}`;
+  el.dataset.id = data.id;
+  el.dataset.type = data.type;
+
+  const pos = positions[data.id] || defaultPos(data.type, indexInType);
+  positions[data.id] = pos;
+  el.style.left = pos.x + 'px';
+  el.style.top  = pos.y + 'px';
+
+  const rot = defaultRotation(globalIndex);
+  if (!positions[data.id]._dragged) {
+    el.style.transform = `rotate(${rot}deg)`;
+  }
+
+  const pinColor = PIN_COLORS[data.type] || 'var(--brass-faded)';
+
+  let body = '';
+  if (data.type === 'contradiction') {
+    body = `
+      <div class="board-card-type">Contradiction</div>
+      <div class="board-card-detail">${data.detail || ''}</div>
+      <div class="board-card-vs">does not agree with</div>
+      <div class="board-card-account">${(data.account_a || '').slice(0,70)}…</div>
+    `;
+  } else if (data.type === 'source') {
+    body = `
+      <div class="board-card-type">Source · ${data.confidence || ''}</div>
+      <div class="board-card-label">${data.label}</div>
+      ${data.detail ? `<div class="board-card-detail">${data.detail.slice(0,90)}…</div>` : ''}
+      ${data.url ? `<div class="board-card-source">${data.url.slice(0,40)}</div>` : ''}
+    `;
+  } else {
+    body = `
+      <div class="board-card-type">${data.type}</div>
+      <div class="board-card-label">${data.label}</div>
+      ${data.detail ? `<div class="board-card-detail">${data.detail}</div>` : ''}
+    `;
+  }
+
+  el.innerHTML = `
+    <div class="board-pin" style="background:${pinColor}"></div>
+    <div class="board-card-body">${body}</div>
+  `;
+
+  enableDrag(el);
+  return el;
+}
+
+// ── Drag ────────────────────────────────────────────────────────────────────
+function enableDrag(el) {
+  let ox, oy, sx, sy;
+
+  el.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    ox = e.clientX; oy = e.clientY;
+    sx = parseInt(el.style.left); sy = parseInt(el.style.top);
+    el.classList.add('dragging');
+    el.style.zIndex = 50;
+
+    function move(e) {
+      const x = sx + e.clientX - ox;
+      const y = sy + e.clientY - oy;
+      el.style.left = x + 'px';
+      el.style.top  = y + 'px';
+      positions[el.dataset.id] = { x, y, _dragged: true };
+      updateConnections();
+    }
+    function up() {
+      el.classList.remove('dragging');
+      el.style.zIndex = 2;
+      savePositions();
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+    }
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  });
+}
+
+// ── SVG connections ─────────────────────────────────────────────────────────
+function cardCenter(id) {
+  const el = document.getElementById(`card-${id}`);
+  if (!el) return null;
+  const x = parseInt(el.style.left) + el.offsetWidth / 2;
+  const y = parseInt(el.style.top)  + el.offsetHeight / 2;
+  return { x, y };
+}
+
+function drawBezier(svg, x1, y1, x2, y2, color, dash) {
+  const mx = (x1 + x2) / 2;
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', `M ${x1} ${y1} C ${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`);
+  path.setAttribute('stroke', color);
+  path.setAttribute('stroke-width', '0.7');
+  path.setAttribute('fill', 'none');
+  path.setAttribute('opacity', '0.4');
+  if (dash) path.setAttribute('stroke-dasharray', '3,5');
+  svg.appendChild(path);
+}
+
+function updateConnections() {
+  const svg = document.getElementById('board-svg');
+  if (!svg) return;
+  svg.innerHTML = '';
+  if (activeFilter !== 'all') return;
+
+  // Connect: first source → each entity (suggests origin)
+  const firstSrcId = allCards.find(c => c.type === 'source')?.id;
+  if (firstSrcId) {
+    const sc = cardCenter(firstSrcId);
+    if (sc) {
+      allCards.filter(c => c.type === 'person' || c.type === 'organisation').forEach(entity => {
+        const ec = cardCenter(entity.id);
+        if (ec) drawBezier(svg, sc.x, sc.y, ec.x, ec.y, 'var(--brass-deepest)', true);
+      });
+    }
+  }
+
+  // Connect: contradiction pairs → their source labels (visual weight)
+  allCards.filter(c => c.type === 'contradiction').forEach((contra, i) => {
+    const cc = cardCenter(contra.id);
+    if (!cc) return;
+    // Connect to nearest source cards
+    const sources = allCards.filter(c => c.type === 'source').slice(i * 2, i * 2 + 2);
+    sources.forEach(src => {
+      const sc = cardCenter(src.id);
+      if (sc) drawBezier(svg, cc.x, cc.y, sc.x, sc.y, '#8A4A2A', false);
+    });
+  });
+}
+
+// ── Filter ──────────────────────────────────────────────────────────────────
+function setFilter(type, btn) {
+  document.querySelectorAll('.board-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilter = type;
+  let visible = 0;
+  document.querySelectorAll('.board-card').forEach(card => {
+    const show = type === 'all' || card.dataset.type === type;
+    card.classList.toggle('hidden', !show);
+    if (show) visible++;
+  });
+  document.getElementById('board-count').textContent = `${visible} card${visible !== 1 ? 's' : ''}`;
+  updateConnections();
+}
+
+// ── Reset positions ─────────────────────────────────────────────────────────
+function resetPositions() {
+  localStorage.removeItem(STORAGE_KEY);
+  positions = {};
+  // Re-render
+  init();
+}
+
+// ── Section labels ──────────────────────────────────────────────────────────
+function addSectionLabel(canvas, x, y, text) {
+  const el = document.createElement('div');
+  el.className = 'board-section-label';
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+  el.textContent = text;
+  canvas.appendChild(el);
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────
+async function init() {
+  const canvas = document.getElementById('board-canvas');
+  // Clear existing cards (keep SVG and loading)
+  canvas.querySelectorAll('.board-card,.board-section-label').forEach(el => el.remove());
+  document.getElementById('board-loading').style.display = 'block';
+
+  let data;
+  try {
+    const resp = await fetch(`/cases/${CASE_ID}/board/data`);
+    data = await resp.json();
+  } catch (err) {
+    document.getElementById('board-loading').innerHTML =
+      `<div style="font-family:var(--font-mono);font-size:10px;color:var(--contradiction);letter-spacing:0.1em">The board could not load.</div>`;
+    return;
+  }
+
+  document.getElementById('board-loading').style.display = 'none';
+
+  positions = loadPositions();
+  allCards = [
+    ...data.entities,
+    ...data.sources,
+    ...data.contradictions,
+  ];
+
+  const total = allCards.length;
+  if (total === 0) {
+    canvas.innerHTML += `
+      <div class="board-empty">
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass-deepest);margin-bottom:12px">Board pending</div>
+        <p style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:var(--brass-deepest);max-width:320px;line-height:1.6">
+          No items on file yet. Convene the unit to begin building the record.
+        </p>
+        <a href="/cases/${CASE_ID}" style="display:inline-block;margin-top:16px;font-family:var(--font-sans);font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--brass-faded);text-decoration:none;">
+          ← Back to case room
+        </a>
+      </div>`;
+    return;
+  }
+
+  // Section labels
+  if (data.entities.filter(e => e.type === 'person').length)
+    addSectionLabel(canvas, LAYOUT_BASE.person.x, LAYOUT_BASE.person.y - 28, 'People');
+  if (data.entities.filter(e => e.type === 'organisation').length)
+    addSectionLabel(canvas, LAYOUT_BASE.organisation.x, LAYOUT_BASE.organisation.y - 28, 'Organisations');
+  if (data.sources.length)
+    addSectionLabel(canvas, LAYOUT_BASE.source.x, LAYOUT_BASE.source.y - 28, 'Sources');
+  if (data.contradictions.length)
+    addSectionLabel(canvas, LAYOUT_BASE.contradiction.x, LAYOUT_BASE.contradiction.y - 28, 'Contradictions');
+
+  // Build cards
+  const typeCounts = {};
+  let globalIdx = 0;
+  allCards.forEach(item => {
+    typeCounts[item.type] = (typeCounts[item.type] || 0);
+    const indexInType = typeCounts[item.type]++;
+    const card = buildCard(item, indexInType, globalIdx++);
+    canvas.appendChild(card);
+  });
+
+  // Update count
+  document.getElementById('board-count').textContent = `${total} card${total !== 1 ? 's' : ''}`;
+
+  // Draw connections after DOM paint
+  requestAnimationFrame(updateConnections);
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+{% endblock %}

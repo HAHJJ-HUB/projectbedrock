@@ -192,6 +192,36 @@ def _extract_contradictions(parsed: dict) -> list:
     return pairs[:8]
 
 
+def _extract_entities(parsed: dict) -> list[dict]:
+    """Extract named entities from Oracle's Section I and II output."""
+    text = (parsed.get("section_i") or "") + "\n" + (parsed.get("section_ii") or "")
+    entities: list[dict] = []
+    seen: set[str] = set()
+
+    # Persons: two or more consecutive Title-case words
+    for m in re.finditer(r'\b([A-Z][a-z]{1,}(?:\s[A-Z][a-z]+){1,2})\b', text):
+        name = m.group(1)
+        if name not in seen and len(name) > 5:
+            seen.add(name)
+            entities.append({"id": f"p{len(entities)}", "type": "person",
+                              "label": name, "detail": ""})
+
+    # Organisations: suffixed with a recognisable institutional word
+    org_re = (r'\b([A-Z][A-Za-z\s&\-]{2,42}'
+              r'(?:Corp(?:oration)?|Ltd|Inc|LLC|Authority|Council|Agency|'
+              r'Department|Ministry|Institute|Foundation|Association|Group|'
+              r'Company|Commission|Bureau|Office|Organisation|Organization|'
+              r'Service|Trust|Fund|Bank|University|College))\b')
+    for m in re.finditer(org_re, text):
+        name = m.group(1).strip()
+        if name not in seen:
+            seen.add(name)
+            entities.append({"id": f"o{len(entities)}", "type": "organisation",
+                              "label": name, "detail": ""})
+
+    return entities[:40]
+
+
 def _finding_status(runs: list, has_finding: bool, contradictions: int) -> dict:
     """Finding status: draft / bound / disputed / revised — with a basis line."""
     complete = [r for r in runs if r.get("status") == "complete"]
@@ -675,6 +705,168 @@ async def analyze_case(request: Request, case_id: int):
         "case": case,
         "analysis": analysis,
     })
+
+
+# ── Board ────────────────────────────────────────────────────────────────────
+
+@app.get("/cases/{case_id}/board", response_class=HTMLResponse)
+async def board_view(request: Request, case_id: int):
+    case = get_case(case_id)
+    if not case:
+        return HTMLResponse("Case not found", status_code=404)
+    return templates.TemplateResponse(request, "board.html", {"case": case})
+
+
+@app.get("/cases/{case_id}/board/data")
+async def board_data_api(case_id: int):
+    case = get_case(case_id)
+    if not case:
+        return JSONResponse({"error": "not found"}, status_code=404)
+
+    findings: list = []
+    try:
+        from memory.persistent_memory import retrieve_findings
+        findings = retrieve_findings(case["name"], topic=case["name"], n_results=30)
+    except Exception:
+        pass
+
+    parsed = _load_oracle_output(case_id)
+    evidence = _build_evidence(findings)
+    contradictions = _extract_contradictions(parsed)
+    entities = _extract_entities(parsed)
+
+    return JSONResponse({
+        "entities": entities,
+        "sources": [
+            {
+                "id": f"s{e['n']}",
+                "type": "source",
+                "label": e["domain"],
+                "detail": e["snippet"][:100] if e["snippet"] else "",
+                "url": e["url"],
+                "confidence": e["confidence"],
+            }
+            for e in evidence[:16]
+        ],
+        "contradictions": [
+            {
+                "id": f"c{i}",
+                "type": "contradiction",
+                "label": "Contradiction on record",
+                "detail": f"{c['source_a']} vs {c['source_b']}",
+                "account_a": c["account_a"][:80],
+                "account_b": c["account_b"][:80],
+            }
+            for i, c in enumerate(contradictions)
+        ],
+    })
+
+
+# ── DTN Tactics ───────────────────────────────────────────────────────────────
+
+_TACTIC_DATA = [
+    {"id": "authority", "name": "Authority", "strength": "High",
+     "description": "Invoking credentials, official status, or expert consensus to establish claims without evidence. The authority may be real, exaggerated, or fabricated.",
+     "detection": ["Claims citing unnamed experts or 'studies show'", "Credentials emphasised disproportionately to argument quality", "Official channels invoked to shut down inquiry"],
+     "countermeasures": ["Request primary sources, not summaries", "Verify credentials independently", "Evaluate the argument on its own merits"]},
+    {"id": "framing", "name": "Framing", "strength": "High",
+     "description": "Controlling which aspects of an issue are presented, which language is used, and which context is provided — to pre-determine how the audience interprets events before thinking begins.",
+     "detection": ["Strong word choices that load the conclusion", "Consistent omission of context that would change the picture", "Stories structured so only one reading is available"],
+     "countermeasures": ["Identify what is not being said", "Test alternative framings of the same facts", "Ask who benefits from this framing"]},
+    {"id": "cherry-picking", "name": "Cherry-Picking", "strength": "Medium",
+     "description": "Selecting only evidence that supports a predetermined conclusion while suppressing contradicting evidence. The selected evidence may be accurate; the problem is what is excluded.",
+     "detection": ["Unusually clean data sets with no contradictions", "Statistics cited without base rates or comparison", "Historical examples drawn from non-representative periods"],
+     "countermeasures": ["Search for disconfirming evidence actively", "Ask for the full dataset, not just examples", "Look for what time period or population was excluded"]},
+    {"id": "gaslighting", "name": "Gaslighting", "strength": "High",
+     "description": "Causing a target to doubt their own perception, memory, or judgment. Denying events that occurred, reinterpreting past statements, or asserting the target misunderstood what they clearly witnessed.",
+     "detection": ["Denials that contradict documented evidence", "Claims that the target is confused or misremembering", "Statements reframed as 'taken out of context' without the context provided"],
+     "countermeasures": ["Maintain contemporaneous records", "Rely on documented evidence, not memory alone", "Seek corroboration from independent sources"]},
+    {"id": "repetition", "name": "Repetition", "strength": "High",
+     "description": "Repeating a claim frequently enough that it becomes accepted as fact through familiarity. The illusory truth effect: repeated exposure increases perceived credibility regardless of accuracy.",
+     "detection": ["Identical language appearing across multiple independent-seeming sources", "Claims that 'everyone knows' something without a sourced origin", "A narrative that appears simultaneously across unrelated channels"],
+     "countermeasures": ["Trace claims to their original source", "Evaluate evidence each time a claim is encountered, not cumulatively", "Check for coordinated messaging behind apparent independent agreement"]},
+    {"id": "false-equivalence", "name": "False Equivalence", "strength": "Medium",
+     "description": "Presenting two things as equal in significance or credibility when they are not. Used to artificially balance a debate, legitimise fringe positions, or manufacture controversy where consensus exists.",
+     "detection": ["'Both sides' framing applied to one-sided factual questions", "Expert consensus placed alongside minority dissent as equal", "Moral equivalence drawn between unequal acts"],
+     "countermeasures": ["Assess the weight of evidence on each side independently", "Distinguish opinion from factual questions", "Ask whether the two positions actually make equivalent claims"]},
+    {"id": "straw-man", "name": "Straw Man", "strength": "Medium",
+     "description": "Misrepresenting an opponent's position in a weakened or exaggerated form, then attacking that false version. The real position is never engaged.",
+     "detection": ["Characterisations of the opposing view that its proponents would reject", "Quotes taken out of context to imply positions not held", "Extreme versions of a position used to represent mainstream variants"],
+     "countermeasures": ["Verify characterisations against primary sources", "Ask the opponent whether the representation is accurate", "Steel-man the opposing argument before evaluating it"]},
+    {"id": "ad-hominem", "name": "Ad Hominem", "strength": "Low",
+     "description": "Attacking the person making an argument rather than the argument itself. Used to discredit a source without addressing the evidence or reasoning they have presented.",
+     "detection": ["Responses focused on the speaker's character, history, or affiliations", "Source credibility challenged without engaging the content", "Biographical attacks that appear when evidence cannot be refuted"],
+     "countermeasures": ["Evaluate arguments on their merits regardless of source", "Note when personal attacks substitute for substantive response", "Distinguish legitimate credibility concerns from irrelevant attacks"]},
+    {"id": "whataboutism", "name": "Whataboutism", "strength": "Low",
+     "description": "Deflecting criticism by raising a counter-accusation or comparable wrongdoing by others. Does not address the original claim but shifts the conversation to a different subject.",
+     "detection": ["Counter-accusations that do not address the original point", "'What about X?' responses to specific evidence", "Competitive suffering deployed as defence"],
+     "countermeasures": ["Hold the counter-accusation separate from the original claim", "Acknowledge the counter-point may be valid without conceding the original", "Return to the evidence after addressing the deflection"]},
+    {"id": "moving-goalposts", "name": "Moving the Goalposts", "strength": "Medium",
+     "description": "Changing the criteria for evidence or proof each time the original criteria are met. The demands escalate to ensure the conclusion can never be confirmed.",
+     "detection": ["New evidentiary demands that appear after previous ones are satisfied", "Standards that shift in specificity or type", "Claims that more evidence is always needed without defining sufficiency"],
+     "countermeasures": ["Record the stated criteria before evidence is presented", "Hold the standard fixed once agreed", "Name the shift when it occurs"]},
+    {"id": "false-urgency", "name": "False Urgency", "strength": "Medium",
+     "description": "Manufacturing time pressure to prevent careful evaluation. The urgency compels action before scrutiny is possible, exploiting the tendency to prioritise speed over accuracy under perceived threat.",
+     "detection": ["Tight deadlines on decisions that do not require them", "Consequences of inaction described as immediate and severe", "Pressure to act before all information is available"],
+     "countermeasures": ["Test whether the urgency is real by questioning its basis", "Slow down when pressure is applied unexpectedly", "Ask who benefits from a fast decision"]},
+    {"id": "manufactured-consent", "name": "Manufactured Consent", "strength": "High",
+     "description": "Creating the appearance of broad public or expert agreement where none exists. Achieved through coordinated messaging, astroturfing, or suppressing dissent.",
+     "detection": ["Claims of consensus without citation of polling or evidence", "Multiple sources using identical language without attribution", "Apparent grassroots support with coordinated messaging"],
+     "countermeasures": ["Trace apparent consensus to its source", "Check for astroturfing or coordinated campaign structures", "Distinguish genuine agreement from managed perception"]},
+    {"id": "overgeneralisation", "name": "Overgeneralisation", "strength": "Low",
+     "description": "Drawing sweeping conclusions from limited, unrepresentative, or anecdotal data. The inference is larger than the evidence supports.",
+     "detection": ["Specific cases presented as universal patterns", "N-of-one examples used to characterise whole populations", "Statistical findings extrapolated beyond their tested conditions"],
+     "countermeasures": ["Examine the sample size and representativeness", "Ask for the base rate before evaluating anecdotes", "Identify the conditions under which the finding holds"]},
+    {"id": "fear-appeal", "name": "Fear Appeal", "strength": "High",
+     "description": "Using threats, danger, or worst-case scenarios to override rational deliberation. The emotional response to fear reduces willingness to evaluate evidence critically.",
+     "detection": ["Threat scenarios emphasised beyond their evidential support", "Worst-case outcomes presented as likely or inevitable", "Acceptance of the actor's position framed as the only protection"],
+     "countermeasures": ["Assess threat probability independently", "Evaluate whether the proposed solution actually addresses the threat", "Note when fear is invoked to prevent rather than inform evaluation"]},
+    {"id": "social-proof", "name": "Social Proof", "strength": "Medium",
+     "description": "Citing the behaviour or belief of a group to pressure conformity. Exploits the human tendency to look to others when uncertain, regardless of whether the group actually holds the claimed view.",
+     "detection": ["Appeals to what 'most people' or 'everyone' believes without evidence", "Polling or survey data cited without methodology", "Social acceptance used as a substitute for evidence"],
+     "countermeasures": ["Verify group behaviour or belief claims with independent sources", "Distinguish popularity from accuracy", "Examine whether the cited group is representative"]},
+    {"id": "red-herring", "name": "Red Herring", "strength": "Low",
+     "description": "Introducing irrelevant information to distract from the main argument. The new topic is designed to seem related while actually shifting the focus away from the central issue.",
+     "detection": ["Topic shifts that seem relevant but do not address the core question", "Emotional or controversial tangents introduced when primary evidence is challenged", "Long responses that never return to the original point"],
+     "countermeasures": ["Name the topic shift when it occurs", "Return explicitly to the original question after the tangent", "Evaluate whether the new information is actually relevant"]},
+    {"id": "slippery-slope", "name": "Slippery Slope", "strength": "Low",
+     "description": "Claiming that one event will inevitably lead to a chain of events culminating in a harmful outcome, without evidence for the claimed causal chain.",
+     "detection": ["Chains of consequences presented without evidence for each link", "'If X then inevitably Y then inevitably Z' arguments", "Extreme final outcomes used to dismiss modest initial proposals"],
+     "countermeasures": ["Evaluate each causal link independently", "Ask for evidence that the chain has occurred in analogous cases", "Separate the immediate proposal from the speculated consequences"]},
+    {"id": "guilt-by-association", "name": "Guilt by Association", "strength": "Medium",
+     "description": "Discrediting a person, organisation, or claim by associating them with a disreputable party, regardless of whether the association is meaningful or relevant.",
+     "detection": ["Arguments structured around connections rather than conduct", "Indirect or historical associations presented as current or causal", "Legitimate relationships used to imply illegitimate ones"],
+     "countermeasures": ["Evaluate the claim or conduct independently of the association", "Assess whether the association is actual, relevant, and causal", "Apply the same standard to all parties under investigation"]},
+    {"id": "normalisation", "name": "Normalisation", "strength": "High",
+     "description": "Gradually shifting the boundaries of acceptable conduct or discourse so that positions that were previously considered extreme become unremarkable over time.",
+     "detection": ["Language that describes extreme positions as merely 'controversial'", "Incremental steps that individually seem modest but collectively shift the frame", "Historical comparisons that treat the new norm as having always been acceptable"],
+     "countermeasures": ["Maintain a fixed reference point outside the current discourse", "Track incremental shifts over time rather than evaluating each step in isolation", "Compare current norms against a baseline from before the shift began"]},
+    {"id": "scapegoating", "name": "Scapegoating", "strength": "High",
+     "description": "Attributing complex systemic failures to a single identifiable group, person, or cause. Simplifies multi-causal problems and redirects grievance toward a target.",
+     "detection": ["Single-cause explanations for multi-causal events", "One group consistently identified as responsible across unrelated problems", "Evidence that challenges the attribution ignored or suppressed"],
+     "countermeasures": ["Map the actual causal structure of the problem independently", "Ask who is excluded from scrutiny by the attribution", "Test the attribution against historical or comparative cases"]},
+    {"id": "circular-reasoning", "name": "Circular Reasoning", "strength": "Low",
+     "description": "Using the conclusion as a premise in its own argument. The argument appears to provide justification but in fact assumes what it needs to prove.",
+     "detection": ["Arguments that return to their starting point without independent support", "Evidence described as self-evident when it requires justification", "Trust cited as a reason to accept claims where trust is what is in dispute"],
+     "countermeasures": ["Identify the foundational claim and seek external evidence for it", "Map the argument structure to see whether it forms a circle", "Demand an argument that doesn't require the conclusion to be accepted first"]},
+    {"id": "false-dichotomy", "name": "False Dichotomy", "strength": "Medium",
+     "description": "Presenting a situation as having only two possible positions or outcomes when additional options exist. Forces a choice between extremes to exclude middle ground.",
+     "detection": ["'You're either with us or against us' framing", "Binary choices presented in situations with multiple viable alternatives", "Third options dismissed as impractical without evidence"],
+     "countermeasures": ["Generate additional options before evaluating", "Ask what is excluded by the binary framing", "Evaluate the options presented against independent criteria"]},
+    {"id": "gish-gallop", "name": "Gish Gallop", "strength": "Medium",
+     "description": "Overwhelming an opponent with a large number of weak, questionable, or irrelevant arguments. The volume makes systematic rebuttal impractical, and failure to address every point is presented as defeat.",
+     "detection": ["Responses containing many more claims than can be addressed in proportion", "Arguments that vary widely in quality and relevance", "Any unaddressed point treated as conceded"],
+     "countermeasures": ["Identify and address the strongest arguments, not all arguments", "Name the tactic explicitly and explain why not every point will be addressed", "Require proportionality: depth over volume"]},
+    {"id": "strategic-ambiguity", "name": "Strategic Ambiguity", "strength": "High",
+     "description": "Deliberate vagueness that allows multiple audiences to interpret a statement according to their own preferences, while maintaining plausible deniability about the intended meaning.",
+     "detection": ["Statements that different audiences claim as support simultaneously", "Denials that the obvious reading was intended when challenged", "Language precise enough to imply meaning but vague enough to disclaim it"],
+     "countermeasures": ["Ask for explicit commitment to a specific interpretation", "Document the statement and the context in which it was made", "Compare stated intent against the logical or natural reading"]},
+]
+
+
+@app.get("/tactics", response_class=HTMLResponse)
+async def tactics_page(request: Request):
+    return templates.TemplateResponse(request, "tactics.html", {"tactics": _TACTIC_DATA})
 
 
 @app.get("/settings", response_class=HTMLResponse)
