@@ -33,6 +33,46 @@
 
 {% block head_styles %}
 
+/* ── Oracle stamp ──────────────────────────────────────────────────────────── */
+.oracle-stamp {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 11px 20px;
+  border: 2.5px solid #C0392B;
+  box-shadow: inset 0 0 0 1.5px #C0392B;
+  transform: rotate(-5deg);
+  transform-origin: left center;
+  color: #C0392B;
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  opacity: 0.72;
+  line-height: 1.5;
+}
+.oracle-stamp-sm {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 13px;
+  border: 2px solid #C0392B;
+  box-shadow: inset 0 0 0 1px #C0392B;
+  transform: rotate(-3deg);
+  transform-origin: left center;
+  color: #C0392B;
+  font-family: var(--font-sans);
+  font-size: 7px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  opacity: 0.68;
+  line-height: 1.5;
+}
+
 /* ── Case file document styles ─────────────────────────────────────────────── */
 
 .cf-page {
@@ -70,24 +110,6 @@
   color: var(--ink-faded);
   margin-bottom: 20px;
   max-width: 640px;
-}
-.cf-stamp {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  font-family: var(--font-sans);
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: var(--ink-faded);
-}
-.cf-stamp-dot {
-  width: 3px;
-  height: 3px;
-  background: var(--paper-border);
-  border-radius: 50%;
-  flex-shrink: 0;
 }
 
 /* Two-column layout */
@@ -186,7 +208,7 @@
 .fp-body {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
@@ -255,10 +277,154 @@
   cursor: not-allowed;
 }
 
+/* ── Finding status seal ───────────────────────────────────────────────── */
+.cf-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 11px;
+  border: 0.5px solid;
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.cf-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.cf-status-draft    { color: #8A7B52; border-color: #C9BF9F; }
+.cf-status-bound    { color: #2E6B3E; border-color: #9DBCA4; }
+.cf-status-disputed { color: #9C3B3A; border-color: #C99A8E; }
+.cf-status-revised  { color: #8A5A1E; border-color: #C9AE83; }
+
+/* ── Confidence tags (shared) ──────────────────────────────────────────── */
+.conf-tag {
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 0.5px solid var(--paper-border);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.conf-High        { color: #2E6B3E; border-color: #9DBCA4; }
+.conf-Medium      { color: #8A5A1E; border-color: #C9AE83; }
+.conf-Low         { color: #9C3B3A; border-color: #C99A8E; }
+.conf-Unverified  { color: var(--ink-faded); border-color: var(--paper-border); }
+.conf-Recorded    { color: #8A5A1E; border-color: #C9AE83; }
+.conf-Logged      { color: var(--ink-faded); border-color: var(--paper-border); }
+.conf-Corroborated{ color: #2E6B3E; border-color: #9DBCA4; }
+
+/* ── Evidence inventory — citation anchors ─────────────────────────────── */
+.ev-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: baseline;
+  padding: 14px 0;
+  border-bottom: 0.5px solid var(--paper-border);
+}
+.ev-row:first-child { border-top: 0.5px solid var(--paper-border); }
+.ev-anchor {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.ev-domain {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink);
+  word-break: break-word;
+}
+.ev-snippet {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-faded);
+  margin-top: 3px;
+}
+
+/* ── Contradictions — source pairs ─────────────────────────────────────── */
+.contra {
+  border: 0.5px solid var(--paper-border);
+  margin-bottom: 14px;
+}
+.contra-side { padding: 14px 16px; }
+.contra-side + .contra-side { border-top: 0.5px solid var(--paper-border); }
+.contra-vs {
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--filer-infiltrator);
+  padding: 4px 0;
+  border-top: 0.5px solid var(--paper-border);
+  border-bottom: 0.5px solid var(--paper-border);
+  background: rgba(156,59,58,0.04);
+}
+.contra-src {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-faded);
+  margin-bottom: 5px;
+}
+.contra-account {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+/* ── Timeline of record ────────────────────────────────────────────────── */
+.tl-row {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 0.5px solid var(--paper-border);
+}
+.tl-row:first-child { border-top: 0.5px solid var(--paper-border); }
+.tl-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-faded);
+  line-height: 1.5;
+}
+.tl-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
+.tl-source {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.tl-body {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+.cf-empty {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-faded);
+  padding: 14px 0;
+}
+
 @media (max-width: 640px) {
   .cf-page { padding: 28px 18px 64px; }
   .cf-two-col { grid-template-columns: 1fr; gap: 32px; }
   .cf-title { font-size: 26px; }
+  .ev-row { grid-template-columns: 26px minmax(0, 1fr); }
+  .ev-row .conf-tag { grid-column: 2; justify-self: start; margin-top: 6px; }
+  .tl-row { grid-template-columns: 1fr; gap: 6px; }
 }
 {% endblock %}
 
@@ -268,7 +434,13 @@
   {# ── Document header ──────────────────────────────────────────────────── #}
   <div class="cf-header">
 
-    <div class="cf-case-number">{{ case.case_number }} · {{ case.subject_type | upper }}</div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px">
+      <div class="cf-case-number" style="margin-bottom:0">{{ case.case_number }} · {{ case.subject_type | upper }}</div>
+      {% if finding_status %}
+      <span class="cf-status cf-status-{{ finding_status.key }}" title="{{ finding_status.basis }}">{{ finding_status.label }}</span>
+      <span style="font-family:var(--font-serif);font-style:italic;font-size:11px;color:var(--ink-faded)">{{ finding_status.basis }}</span>
+      {% endif %}
+    </div>
 
     <h1 class="cf-title">{{ case.name }}</h1>
 
@@ -276,12 +448,12 @@
       {% if case.description %}{{ case.description }}{% else %}A reconstruction of the record.{% endif %}
     </p>
 
-    <div class="cf-stamp">
-      <span>Written by Oracle</span>
-      <div class="cf-stamp-dot"></div>
-      <span>Filed {{ bound_at }}</span>
-      <div class="cf-stamp-dot"></div>
-      <span>{{ case.case_number }}</span>
+    <div style="margin-top:22px">
+      <div class="oracle-stamp">
+        <span>Oracle</span>
+        <span>Filed {{ bound_at[:10] if bound_at else "—" }}</span>
+        <span>{{ case.case_number }}</span>
+      </div>
     </div>
 
   </div>
@@ -294,14 +466,22 @@
 
       <div class="cf-rail-block">
         <div class="cf-rail-label">Confidence</div>
-        <div class="cf-rail-value" style="font-size:18px;color:var(--ink-faded)">—</div>
+        <div class="cf-rail-value" style="font-size:18px;color:{% if confidence_level %}var(--ink){% else %}var(--ink-faded){% endif %}">
+          {{ confidence_level if confidence_level else "—" }}
+        </div>
+        {% if confidence_level and confidence_reason %}
+        <div class="cf-rail-sub">{{ confidence_reason[:90] }}</div>
+        {% else %}
         <div class="cf-rail-sub">pending Oracle's assessment</div>
+        {% endif %}
       </div>
 
       <div class="cf-rail-block">
         <div class="cf-rail-label">Contradictions on record</div>
-        <div class="cf-rail-value" style="font-size:18px;color:var(--ink-faded)">—</div>
-        <div class="cf-rail-sub">none noted to date</div>
+        <div class="cf-rail-value" style="font-size:18px;color:{% if contradictions %}var(--filer-infiltrator){% else %}var(--ink-faded){% endif %}">
+          {{ contradictions | length if contradictions else "—" }}
+        </div>
+        <div class="cf-rail-sub">{% if contradictions %}held as source pairs below{% else %}none noted to date{% endif %}</div>
       </div>
 
       <div class="cf-rail-block">
@@ -346,16 +526,18 @@
       {# The finding #}
       <div class="cf-section-eyebrow">The finding · Oracle</div>
 
-      {# Placeholder Oracle copy — specimens from docs/02_oracle_voice_guide.md #}
-      <p class="cf-finding">
-        Between 2014 and 2017, Calderon Holdings publicly maintained three maritime logistics subsidiaries — CH-Maritime I, II, and III. By 2019, public-facing materials referenced only "the maritime division."
-      </p>
-      <p class="cf-finding">
-        The 2017 leadership change appears to coincide with — but is not directly explained by — the compression of the three subsidiaries into a single division. The unit notes the compression is documented in two independent filings; the leadership change is documented in a third.
-      </p>
-      <p class="cf-finding">
-        The discrepancy has not, to the unit's knowledge, been addressed in subsequent filings. The reader should not assume this means it was concealed; it may simply not have been asked.
-      </p>
+      {% if finding_p1 %}
+      <p class="cf-finding">{{ finding_p1 }}</p>
+      {% endif %}
+      {% if finding_p2 %}
+      <p class="cf-finding">{{ finding_p2 }}</p>
+      {% endif %}
+      {% if finding_p3 %}
+      <p class="cf-finding">{{ finding_p3 }}</p>
+      {% endif %}
+      {% if not finding_p1 %}
+      <p class="cf-finding" style="font-style:italic;color:var(--ink-faded)">The file has not yet been bound. Convene the unit to build the record.</p>
+      {% endif %}
 
       {# Oracle margin note — gold panel, dark text per engineering handoff §8 #}
       <div class="filer-panel" style="background:var(--filer-oracle);margin-bottom:36px">
@@ -364,8 +546,80 @@
           <span class="fp-label" style="color:var(--ink)">Oracle · Margin note</span>
         </div>
         <p class="fp-body" style="color:var(--ink)">
-          The address discrepancy is the central anomaly in this file. It is the kind of detail that does not look intentional in a single source and does look intentional across three. The reader is advised to weigh it accordingly.
+          {% if margin_note %}{{ margin_note }}{% else %}The unit's margin note will appear here when the case file is bound.{% endif %}
         </p>
+      </div>
+
+      <hr class="cf-divider" style="margin-top:0">
+
+      {# Timeline of record — every item carries date + source + confidence #}
+      <div class="cf-section-eyebrow">II · Timeline of the record</div>
+      <div style="margin-bottom:36px">
+        {% if record_timeline %}
+        {% for item in record_timeline %}
+        <div class="tl-row">
+          <div class="tl-date">{{ item.date or "—" }}</div>
+          <div>
+            <div class="tl-meta">
+              <span class="tl-source">{{ item.source }}</span>
+              <span class="conf-tag conf-{{ item.confidence }}" title="{{ item.basis }}">{{ item.confidence }}</span>
+            </div>
+            <p class="tl-body">{{ item.content }}</p>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="cf-empty">No dated entries on the record yet. Each entry is filed with its date, its source, and a confidence rating when the unit convenes.</p>
+        {% endif %}
+      </div>
+
+      <hr class="cf-divider" style="margin-top:0">
+
+      {# Evidence inventory — numbered citation anchors #}
+      <div class="cf-section-eyebrow">V · Evidence inventory · Citation anchors</div>
+      <div style="margin-bottom:36px">
+        {% if evidence %}
+        {% for e in evidence %}
+        <div class="ev-row" id="cite-{{ e.n }}">
+          <span class="ev-anchor">[{{ e.n }}]</span>
+          <div>
+            {% if e.url %}
+            <a class="ev-domain" href="{{ e.url }}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline;text-decoration-color:var(--paper-border)">{{ e.domain }}</a>
+            {% else %}
+            <span class="ev-domain">{{ e.domain }}</span>
+            {% endif %}
+            {% if e.snippet %}<p class="ev-snippet">{{ e.snippet }}</p>{% endif %}
+          </div>
+          <span class="conf-tag conf-{{ e.confidence }}" title="{{ e.basis }}">{{ e.confidence }}</span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="cf-empty">No items filed yet. Every claim in the finding anchors to a numbered source here, each rated for confidence.</p>
+        {% endif %}
+      </div>
+
+      <hr class="cf-divider" style="margin-top:0">
+
+      {# Contradictions — each held as a source pair #}
+      <div class="cf-section-eyebrow">III · Contradictions on record</div>
+      <div style="margin-bottom:36px">
+        {% if contradictions %}
+        {% for c in contradictions %}
+        <div class="contra">
+          <div class="contra-side">
+            <div class="contra-src">{{ c.source_a }}</div>
+            <p class="contra-account">{{ c.account_a }}</p>
+          </div>
+          <div class="contra-vs">does not agree with</div>
+          <div class="contra-side">
+            <div class="contra-src">{{ c.source_b }}</div>
+            <p class="contra-account">{{ c.account_b if c.account_b else "— second account not yet attributed —" }}</p>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="cf-empty">No contradictions on record. When two sources do not agree, the unit holds both accounts here as a pair — neither is resolved silently.</p>
+        {% endif %}
       </div>
 
       <hr class="cf-divider" style="margin-top:0">
@@ -373,14 +627,7 @@
       {# Sections in the file — TOC #}
       <div class="cf-section-eyebrow">Sections in the file</div>
       <div style="margin-bottom:36px">
-        {% set sections = [
-          ("I",   "Timeline of the record",  ""),
-          ("II",  "Contradictions on file",  ""),
-          ("III", "Narrative drift",          ""),
-          ("IV",  "Items filed",              stats.sources if stats.sources else ""),
-          ("V",   "Exhibits",                 ""),
-        ] %}
-        {% for roman, title, count in sections %}
+        {% for roman, title, count in sections_toc %}
         <div class="cf-toc-row">
           <span class="cf-toc-num">{{ roman }}.</span>
           <span class="cf-toc-name">{{ title }}</span>
@@ -401,7 +648,7 @@
           <span class="fp-label" style="color:var(--ink)">Oracle · Margin note</span>
         </div>
         <p class="fp-body" style="color:var(--ink)">
-          Eleven entries on file. Three material to the finding. Listed in order of weight, not chronology.
+          {% if attribution_oracle %}{{ attribution_oracle }}{% else %}Oracle signed the file. Attribution line pending full run.{% endif %}
         </p>
       </div>
 
@@ -412,7 +659,7 @@
           <span class="fp-label" style="color:var(--paper)">Nexus · On the board</span>
         </div>
         <p class="fp-body" style="color:var(--paper)">
-          Nexus pinned M. Calderon to the board. Linked to 4 entities so far.
+          {% if attribution_nexus %}{{ attribution_nexus }}{% else %}Nexus has not yet been convened on this case.{% endif %}
         </p>
       </div>
 
@@ -423,7 +670,7 @@
           <span class="fp-label" style="color:var(--paper)">Ghost · On the recovery</span>
         </div>
         <p class="fp-body" style="color:var(--paper)">
-          Ghost recovered 9 archived snapshots from ICIJ leaks database.
+          {% if attribution_ghost %}{{ attribution_ghost }}{% else %}Ghost has not yet recovered material on this case.{% endif %}
         </p>
       </div>
 
@@ -434,7 +681,7 @@
           <span class="fp-label" style="color:var(--paper)">Infiltrator · In the field</span>
         </div>
         <p class="fp-body" style="color:var(--paper)">
-          Infiltrator entered Panama corporate registry. 1,247 candidates.
+          {% if attribution_infiltrator %}{{ attribution_infiltrator }}{% else %}Infiltrator has not yet gone to the floor on this case.{% endif %}
         </p>
       </div>
 
@@ -446,8 +693,10 @@
   <div class="cf-footer">
 
     <div>
-      <div style="font-family:var(--font-sans);font-size:8px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--ink-faded);margin-bottom:5px">Signed by Oracle</div>
-      <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-faded)">{{ bound_at }}</div>
+      <div class="oracle-stamp-sm">
+        <span>Oracle</span>
+        <span>{{ bound_at[:10] if bound_at else "—" }}</span>
+      </div>
     </div>
 
     <div style="display:flex;align-items:center;gap:10px">

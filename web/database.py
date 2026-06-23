@@ -61,7 +61,32 @@ def init_db() -> None:
             error           TEXT,
             FOREIGN KEY (case_id) REFERENCES cases(id)
         );
+
+        CREATE TABLE IF NOT EXISTS settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
         """)
+
+        # ── Migrations — add case-brief columns if missing ──────────────────
+        existing = {r["name"] for r in con.execute("PRAGMA table_info(cases)").fetchall()}
+        brief_columns = {
+            "objective":      "''",
+            "key_questions":  "''",
+            "timeline_range": "''",
+            "jurisdiction":   "''",
+            "known_sources":  "''",
+            "scope":          "''",
+            "sensitivity":    "'standard'",
+        }
+        for col, default in brief_columns.items():
+            if col not in existing:
+                con.execute(f"ALTER TABLE cases ADD COLUMN {col} TEXT DEFAULT {default}")
+
+        # ── Migrations — add filer_state column to research_runs ─────────────
+        run_existing = {r["name"] for r in con.execute("PRAGMA table_info(research_runs)").fetchall()}
+        if "filer_state" not in run_existing:
+            con.execute("ALTER TABLE research_runs ADD COLUMN filer_state TEXT DEFAULT '{}'")
 
 
 def _next_case_number() -> str:
@@ -77,18 +102,29 @@ def create_case(
     description: str = "",
     priority: str = "medium",
     tags: list[str] | None = None,
+    objective: str = "",
+    key_questions: str = "",
+    timeline_range: str = "",
+    jurisdiction: str = "",
+    known_sources: str = "",
+    scope: str = "",
+    sensitivity: str = "standard",
 ) -> dict:
     now = datetime.utcnow().isoformat()
     case_number = _next_case_number()
     with db() as con:
         cur = con.execute(
             """INSERT INTO cases
-               (case_number, name, subject_type, description, priority, tags, created_at, updated_at)
-               VALUES (?,?,?,?,?,?,?,?)""",
+               (case_number, name, subject_type, description, priority, tags,
+                objective, key_questions, timeline_range, jurisdiction,
+                known_sources, scope, sensitivity, created_at, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (case_number, name, subject_type, description, priority,
-             json.dumps(tags or []), now, now),
+             json.dumps(tags or []), objective, key_questions, timeline_range,
+             jurisdiction, known_sources, scope, sensitivity, now, now),
         )
-        return get_case(cur.lastrowid)
+        case_id = cur.lastrowid
+    return get_case(case_id)
 
 
 def get_case(case_id: int) -> dict | None:
@@ -200,6 +236,53 @@ def get_run(run_id: int) -> dict | None:
             "SELECT * FROM research_runs WHERE id=?", (run_id,)
         ).fetchone()
     return dict(row) if row else None
+
+
+def set_filer_state(run_id: int, state: dict) -> None:
+    """Store per-filer progress JSON on the run record."""
+    with db() as con:
+        con.execute(
+            "UPDATE research_runs SET filer_state=? WHERE id=?",
+            (json.dumps(state), run_id),
+        )
+
+
+def get_notes_since(case_id: int, after_ts: str, limit: int = 30) -> list[dict]:
+    """Get notes created after a given ISO timestamp, newest first."""
+    with db() as con:
+        rows = con.execute(
+            "SELECT * FROM notes WHERE case_id=? AND created_at>? ORDER BY created_at DESC LIMIT ?",
+            (case_id, after_ts, limit),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+_SETTINGS_DEFAULTS: dict[str, str] = {
+    "default_priority":     "medium",
+    "default_subject_type": "topic",
+    "default_scope":        "",
+    "case_number_prefix":   "CASE",
+    "memory_scope":         "per-case",
+    "date_format":          "iso",
+}
+
+
+def get_settings() -> dict[str, str]:
+    with db() as con:
+        rows = con.execute("SELECT key, value FROM settings").fetchall()
+    stored = {r["key"]: r["value"] for r in rows}
+    return {**_SETTINGS_DEFAULTS, **stored}
+
+
+def save_settings(updates: dict[str, str]) -> None:
+    with db() as con:
+        for key, value in updates.items():
+            if key in _SETTINGS_DEFAULTS:
+                con.execute(
+                    "INSERT INTO settings (key, value) VALUES (?,?) "
+                    "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                    (key, value),
+                )
 
 
 def case_stats(case_id: int) -> dict:

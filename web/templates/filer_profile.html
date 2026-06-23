@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}Filer № {{ filer.num }} — {{ filer.name }}{% endblock %}
+
+{% block head_styles %}
+.profile-grid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 48px;
+  align-items: start;
+  margin-bottom: 48px;
+}
+@media (max-width: 760px) {
+  .profile-grid { grid-template-columns: 1fr; gap: 28px; }
+  .profile-portrait { max-width: 280px; }
+  .does-grid { grid-template-columns: 1fr; gap: 28px; }
+}
+.profile-portrait {
+  background: var(--paper);
+  background-image:
+    radial-gradient(ellipse 100% 55% at 50% -5%, var(--paper-aged) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 50% at 0% 100%, var(--paper-band) 0%, transparent 45%),
+    radial-gradient(ellipse 50% 50% at 100% 100%, var(--paper-band) 0%, transparent 45%);
+  aspect-ratio: 4/5;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(201,191,159,0.3);
+}
+.profile-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.does-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 32px;
+  margin-bottom: 48px;
+}
+.does-col-head {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  padding-bottom: 10px;
+  border-bottom: 0.5px solid var(--border-dark);
+  margin-bottom: 14px;
+}
+.does-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.does-item::before {
+  content: '▪';
+  font-size: 8px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.does-col-does .does-item::before    { color: var(--filer-color); }
+.does-col-doesnot .does-item::before { color: var(--brass-faded); }
+.does-item span {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--bone-body);
+}
+
+/* Roster nav */
+.roster-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 0.5px solid var(--border-dark);
+  overflow: hidden;
+  margin-bottom: 40px;
+}
+.roster-nav-item {
+  flex: 1;
+  padding: 10px 0;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--brass-faded);
+  border-right: 0.5px solid var(--border-dark);
+  transition: color 0.1s, background 0.1s;
+}
+.roster-nav-item:last-child { border-right: none; }
+.roster-nav-item:hover { color: var(--brass); background: var(--wood-mid); }
+.roster-nav-item.active { color: var(--bone); background: var(--wood-mid); }
+.roster-nav-item.inactive { pointer-events: none; color: var(--brass-deepest); }
+{% endblock %}
+
+{% block content %}
+<div class="page" style="--filer-color:{{ filer.color }}">
+
+  <!-- Roster navigation -->
+  <div class="roster-nav">
+    {% for slug, num, name in [
+      ('infiltrator','01','Infiltrator'),
+      ('ghost','02','Ghost'),
+      ('nexus','03','Nexus'),
+      ('oracle','04','Oracle'),
+    ] %}
+    <a href="/filers/{{ slug }}"
+       class="roster-nav-item {% if slug == filer.name.lower() %}active{% endif %}">
+      <div style="display:flex;align-items:center;justify-content:center;gap:7px">
+        <div class="badge badge-{{ slug }}" style="width:16px;height:16px;font-size:7px">{{ num }}</div>
+        <span>{{ name }}</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Profile grid: portrait + identity -->
+  <div class="profile-grid">
+
+    <!-- Left: portrait + base facts -->
+    <div>
+      <div class="profile-portrait" style="border-top:2px solid {{ filer.color }}">
+        <img src="/static/images/{{ filer.name.lower() }}.png" alt="{{ filer.name }}">
+      </div>
+      <div style="padding:16px 0;border-bottom:0.5px solid var(--border-dark)">
+        <div style="font-family:var(--font-sans);font-size:8px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:6px">Filer</div>
+        <div style="font-family:var(--font-mono);font-size:22px;font-weight:500;color:{{ filer.color }}">№ {{ filer.num }}</div>
+      </div>
+      <div style="padding:14px 0;border-bottom:0.5px solid var(--border-dark)">
+        <div style="font-family:var(--font-sans);font-size:8px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:6px">Role</div>
+        <div style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:{{ filer.tint }}">{{ filer.role }}</div>
+      </div>
+      <div style="padding:14px 0">
+        <div style="font-family:var(--font-sans);font-size:8px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--brass-faded);margin-bottom:6px">Position in the unit</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--brass-muted)">Filer {{ filer.num }} of 04</div>
+      </div>
+    </div>
+
+    <!-- Right: identity text -->
+    <div>
+      <div style="margin-bottom:6px">
+        <span style="font-family:var(--font-sans);font-size:9px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:var(--brass-faded)">The Casefilers · Filer {{ filer.num }}</span>
+      </div>
+      <h1 style="font-family:var(--font-serif);font-size:42px;font-weight:500;color:var(--bone);margin-bottom:6px;line-height:1.1;letter-spacing:-0.01em">{{ filer.name }}</h1>
+      <p style="font-family:var(--font-serif);font-style:italic;font-size:17px;color:{{ filer.tint }};margin-bottom:28px">{{ filer.role }}</p>
+
+      <p style="font-family:var(--font-serif);font-size:16px;line-height:1.75;color:var(--bone-body);margin-bottom:18px">{{ filer.para_a }}</p>
+      <p style="font-family:var(--font-serif);font-size:16px;line-height:1.75;color:var(--bone-body)">{{ filer.para_b }}</p>
+    </div>
+
+  </div><!-- /profile-grid -->
+
+  <hr style="border:none;border-top:0.5px solid var(--border-dark);margin-bottom:32px">
+
+  <!-- What they do / do not do -->
+  <div class="eyebrow" style="margin-bottom:20px">On the file</div>
+  <div class="does-grid">
+    <div class="does-col-does">
+      <div class="does-col-head" style="color:{{ filer.tint }}">What {{ filer.name }} does</div>
+      {% for item in filer.does %}
+      <div class="does-item"><span>{{ item }}</span></div>
+      {% endfor %}
+    </div>
+    <div class="does-col-doesnot">
+      <div class="does-col-head" style="color:var(--brass-faded)">What {{ filer.name }} does not do</div>
+      {% for item in filer.does_not %}
+      <div class="does-item"><span>{{ item }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <hr style="border:none;border-top:0.5px solid var(--border-dark);margin-bottom:32px">
+
+  <!-- Specimen passage -->
+  <div class="eyebrow" style="margin-bottom:16px">From the log</div>
+  <div class="card" style="padding:22px 28px;border-left:2px solid {{ filer.color }}">
+    <p style="font-family:var(--font-mono);font-size:12px;line-height:1.9;color:var(--bone-body)">{{ filer.specimen }}</p>
+  </div>
+
+  <!-- Nav footer -->
+  <div style="margin-top:48px;display:flex;align-items:center;justify-content:space-between">
+    {% if filer.prev %}
+    <a href="/filers/{{ filer.prev }}" class="btn btn-ghost">← Previous filer</a>
+    {% else %}
+    <span></span>
+    {% endif %}
+    <a href="/" class="btn btn-ghost">Back to registry</a>
+    {% if filer.next %}
+    <a href="/filers/{{ filer.next }}" class="btn btn-ghost">Next filer →</a>
+    {% else %}
+    <span></span>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

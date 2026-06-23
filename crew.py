@@ -21,6 +21,7 @@ def build_llm() -> LLM:
 def build_crew(
     topic: str,
     scope: str = "",
+    case_id: int = 0,
     step_callback=None,
     task_callback=None,
 ) -> Crew:
@@ -32,6 +33,10 @@ def build_crew(
     oracle = create_oracle(llm)
 
     scope_clause = f"\n\nResearch scope / constraints: {scope}" if scope else ""
+
+    from pathlib import Path
+    output_dir = Path(f"output/case_{case_id}") if case_id else Path("output")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Task 1: Source Discovery ────────────────────────────────────────────
     task_discover = Task(
@@ -50,6 +55,11 @@ def build_crew(
             f"9. Search Archive.org for relevant archived materials.\n"
             f"10. Search Reddit for community discussions.\n"
             f"11. Generate targeted dork queries to find: PDFs, forums, old discussions.\n\n"
+            f"INVERSION PRINCIPLE — apply this throughout:\n"
+            f"For every claim you find, also hunt for what *should* exist but is absent.\n"
+            f"What would be documented if this were straightforward? Is it there?\n"
+            f"What denials, retractions, or silences are on record? Log them explicitly.\n"
+            f"Sources that deny, disclaim, or are conspicuously silent are part of the map.\n\n"
             f"For each source found, record: URL, source type, estimated relevance (1-5), "
             f"whether it's live or archived, and a one-line description.\n\n"
             f"Store the complete source map to memory using store_source_map.\n"
@@ -124,41 +134,79 @@ def build_crew(
         context=[task_discover, task_extract],
     )
 
-    # ── Task 4: Final Report ────────────────────────────────────────────────
+    # ── Task 4: Bind the File ───────────────────────────────────────────────
     task_report = Task(
         description=(
-            f"Write the comprehensive intelligence report on: **{topic}**\n\n"
-            f"The report must be thorough, well-organized, and immediately useful to "
-            f"a reader who wants to deeply understand the topic.\n\n"
-            f"REQUIRED REPORT STRUCTURE:\n\n"
-            f"# Intelligence Report: {{topic}}\n"
-            f"*Generated: {{date}} | Sources: {{N}} | Confidence: {{level}}*\n\n"
-            f"## Executive Summary\n"
-            f"What we know, the most significant findings, overall confidence. 3-5 paragraphs.\n\n"
-            f"## Detailed Findings\n"
-            f"Organized thematically. Each finding cited with source URL. "
-            f"Minimum 10 substantive findings. Distinguish facts from inferences.\n\n"
-            f"## Entity Map\n"
-            f"All key entities with descriptions and source citations.\n\n"
-            f"## Timeline\n"
-            f"Chronological events with dates and citations.\n\n"
-            f"## Source Inventory\n"
-            f"Every source consulted: URL | Type | Reliability | Key content contributed.\n\n"
-            f"## Gaps & Next Steps\n"
-            f"What remains unknown and the best leads for further investigation.\n\n"
-            f"## Confidence Assessment\n"
-            f"What is CONFIRMED vs REPORTED vs INFERRED, with reasoning.\n\n"
-            f"Pull everything from memory. Use retrieve_memory with multiple queries "
-            f"to ensure you have all findings. Write for depth, not brevity.{scope_clause}"
+            f"Bind the case file on: **{topic}**\n\n"
+            f"Pull everything from memory first. Multiple retrieve_memory calls — "
+            f"different query angles for the same topic. Nothing missed.\n\n"
+            f"Then write the case file. It is the deliverable the user opens. "
+            f"Complete, cited, in Oracle's voice.\n\n"
+            f"THE FINDING\n"
+            f"Three paragraphs.\n"
+            f"  Paragraph 1: the central claim the record supports.\n"
+            f"  Paragraph 2: the specific evidence, with citations.\n"
+            f"  Paragraph 3: what the unit notes about scope, coincidence, or "
+            f"remaining uncertainty.\n\n"
+            f"THE MARGIN NOTE\n"
+            f"One to three sentences. Three-beat shape: what the anomaly is, "
+            f"why it matters, what the reader should do with it.\n\n"
+            f"SECTION I — THE RECORD\n"
+            f"The record, reconstructed. Entities, parents, subsidiaries, "
+            f"dissolutions. Every entry cited.\n\n"
+            f"SECTION II — THE TIMELINE\n"
+            f"Chronological events. One event per entry. Each entry carries "
+            f"its citation.\n\n"
+            f"SECTION III — CONTRADICTIONS ON RECORD\n"
+            f"Material entries ranked by weight against the subject. For each: "
+            f"what Source A says, what Source B says, what would have to be "
+            f"true for both to be correct, which one the other evidence supports. "
+            f"Non-material entries listed but not elevated.\n\n"
+            f"SECTION IV — NARRATIVE DRIFT\n"
+            f"Where the language shifted. Where entities disappeared from later "
+            f"coverage. Where speculation hardened into stated fact. Where "
+            f"certainty inflated without new evidence.\n\n"
+            f"SECTION V — THE SOURCE INVENTORY\n"
+            f"Every URL. For each: type, confidence tier "
+            f"(CONFIRMED / REPORTED / INFERRED), what it contributed to the file.\n\n"
+            f"SECTION VI — EXHIBITS\n"
+            f"The recovered material Ghost brought back. For each exhibit: "
+            f"provenance, chain of custody, what it shows.\n\n"
+            f"ATTRIBUTION LINES\n"
+            f"One line per filer — what each did on this case, third person, "
+            f"past tense. Oracle first, then Nexus, Ghost, Infiltrator.\n\n"
+            f"CONFIDENCE\n"
+            f"Overall level: High, Medium, or Low. One paragraph of explicit "
+            f"reasoning. State what would change it.\n\n"
+            f"Voice rules:\n"
+            f"  Active voice. Past tense for completed work. Present tense for "
+            f"the record's state.\n"
+            f"  No hedging language. Use instead: 'appears to,' 'on the record,' "
+            f"'to the unit's knowledge.'\n"
+            f"  Three confidence tiers, never collapsed: CONFIRMED, REPORTED, "
+            f"INFERRED.\n"
+            f"  Every factual claim cites its source URL. An uncited claim is "
+            f"an opinion.\n\n"
+            f"Oracle signs the case file with a timestamp.{scope_clause}"
         ),
         expected_output=(
-            "A complete intelligence report in Markdown format, minimum 2000 words. "
-            "All sections present and fully populated. Every factual claim cited. "
-            "Source inventory complete. Gaps identified. Confidence levels assigned."
+            "A complete case file in Markdown. Sections in this order:\n"
+            "  THE FINDING (three paragraphs, every claim cited)\n"
+            "  THE MARGIN NOTE (one to three sentences)\n"
+            "  SECTION I — THE RECORD\n"
+            "  SECTION II — THE TIMELINE\n"
+            "  SECTION III — CONTRADICTIONS ON RECORD\n"
+            "  SECTION IV — NARRATIVE DRIFT\n"
+            "  SECTION V — THE SOURCE INVENTORY\n"
+            "  SECTION VI — EXHIBITS\n"
+            "  ATTRIBUTION LINES (one per filer, third person past tense)\n"
+            "  CONFIDENCE (High / Medium / Low, explicit reasoning)\n"
+            "  ORACLE'S SIGNATURE (timestamp)\n\n"
+            "Confidence tiers applied throughout. No uncited factual claims."
         ),
         agent=oracle,
         context=[task_discover, task_extract, task_analyze],
-        output_file="output/report.md",
+        output_file=str(output_dir / "report.md"),
     )
 
     crew_kwargs = dict(
@@ -166,15 +214,7 @@ def build_crew(
         tasks=[task_discover, task_extract, task_analyze, task_report],
         process=Process.sequential,
         verbose=True,
-        memory=True,
-        embedder={
-            "provider": "anthropic",
-            "config": {
-                "model": "voyage-3",
-                "api_key": ANTHROPIC_API_KEY,
-            },
-        },
-        output_log_file="output/crew_log.txt",
+        output_log_file=str(output_dir / "crew_log.txt"),
     )
     if step_callback is not None:
         crew_kwargs["step_callback"] = step_callback

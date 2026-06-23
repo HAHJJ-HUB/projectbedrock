@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+{% block title %}Configuration — The Casefilers{% endblock %}
+
+{% block head_styles %}
+.config-section {
+  margin-bottom: 48px;
+}
+.config-section-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 0.5px solid var(--border-dark);
+}
+.config-section-title {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--brass-muted);
+}
+.config-section-num {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--brass-deepest);
+  letter-spacing: 0.1em;
+}
+
+.config-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 32px;
+  align-items: start;
+  padding: 18px 0;
+  border-bottom: 0.5px solid var(--border-dark);
+}
+.config-row:last-child { border-bottom: none; }
+
+.config-label {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bone);
+  padding-top: 10px;
+}
+.config-hint {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--brass-faded);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+}
+.radio-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.radio-item input[type="radio"] {
+  appearance: none;
+  width: 14px; height: 14px;
+  border: 0.5px solid var(--brass-deepest);
+  border-radius: 50%;
+  background: var(--wood-deepest);
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  transition: border-color 0.12s;
+}
+.radio-item input[type="radio"]:checked {
+  border-color: var(--brass);
+  background: var(--brass);
+  box-shadow: inset 0 0 0 3px var(--wood-deepest);
+}
+.radio-item input[type="radio"]:hover { border-color: var(--brass-muted); }
+.radio-label {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--bone-body);
+}
+.radio-label-sub {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--brass-faded);
+  margin-left: 4px;
+}
+
+.access-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 0.5px solid var(--border-dark);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--brass-faded);
+}
+
+/* Saved flash */
+.saved-flash {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  background: rgba(74,222,128,0.05);
+  border: 0.5px solid var(--ops-green-deep);
+  margin-bottom: 32px;
+}
+{% endblock %}
+
+{% block content %}
+<div class="page" style="max-width:860px">
+
+  <!-- Page header -->
+  <div style="margin-bottom:40px;padding-bottom:28px;border-bottom:0.5px solid var(--border-dark)">
+    <div style="border-left:2px solid var(--brass-faded);padding-left:20px">
+      <div class="eyebrow" style="margin-bottom:10px;color:var(--brass-muted)">Unit · Configuration</div>
+      <h1 style="font-family:var(--font-serif);font-size:34px;font-weight:500;color:var(--bone);margin-bottom:6px;line-height:1.1">
+        Unit configuration
+      </h1>
+      <p style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:var(--brass-faded)">
+        Default behaviour for new cases and the record.
+      </p>
+    </div>
+  </div>
+
+  {% if saved %}
+  <div class="saved-flash">
+    <span style="font-family:var(--font-mono);font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--ops-green)">✓ Configuration filed.</span>
+  </div>
+  {% endif %}
+
+  <form method="post" action="/settings">
+
+    <!-- §1 — Case defaults -->
+    <div class="config-section">
+      <div class="config-section-head">
+        <span class="config-section-num">§ 01</span>
+        <span class="config-section-title">Case defaults</span>
+      </div>
+
+      <!-- Default priority -->
+      <div class="config-row">
+        <div>
+          <div class="config-label">Default priority</div>
+          <div class="config-hint">Applied when opening a new case without specifying priority.</div>
+        </div>
+        <div class="radio-group">
+          {% for val, label, hint in [
+            ("critical", "Critical",  "immediate threat or time-sensitive matter"),
+            ("high",     "High",       "significant interest, pursue promptly"),
+            ("medium",   "Medium",     "standard case — work as scheduled"),
+            ("low",      "Low",        "background matter, no urgency"),
+          ] %}
+          <label class="radio-item">
+            <input type="radio" name="default_priority" value="{{ val }}"
+                   {% if settings.default_priority == val %}checked{% endif %}>
+            <span class="radio-label">{{ label }}<span class="radio-label-sub">— {{ hint }}</span></span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Default subject type -->
+      <div class="config-row">
+        <div>
+          <div class="config-label">Default subject type</div>
+          <div class="config-hint">Categorises the case subject in the registry.</div>
+        </div>
+        <div class="radio-group">
+          {% for val, label in [
+            ("person",       "Person"),
+            ("organisation", "Organisation"),
+            ("event",        "Event"),
+            ("topic",        "Topic"),
+            ("other",        "Other"),
+          ] %}
+          <label class="radio-item">
+            <input type="radio" name="default_subject_type" value="{{ val }}"
+                   {% if settings.default_subject_type == val %}checked{% endif %}>
+            <span class="radio-label">{{ label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Default scope -->
+      <div class="config-row">
+        <div>
+          <div class="config-label">Default scope</div>
+          <div class="config-hint">Pre-fill the scope field when opening a new case. Leave blank for no default.</div>
+        </div>
+        <div style="padding-top:6px">
+          <input class="input" type="text" name="default_scope"
+                 value="{{ settings.default_scope }}"
+                 placeholder="e.g. focus on public records from the last five years"
+                 style="max-width:420px">
+        </div>
+      </div>
+
+      <!-- Case number prefix -->
+      <div class="config-row">
+        <div>
+          <div class="config-label">Case number prefix</div>
+          <div class="config-hint">Used when generating case numbers. Default is CASE (e.g. CASE-0001).</div>
+        </div>
+        <div style="padding-top:6px">
+          <input class="input" type="text" name="case_number_prefix"
+                 value="{{ settings.case_number_prefix }}"
+                 placeholder="CASE"
+                 style="max-width:140px;font-family:var(--font-mono);letter-spacing:0.05em">
+        </div>
+      </div>
+
+    </div><!-- /§01 -->
+
+    <!-- §2 — Memory -->
+    <div class="config-section">
+      <div class="config-section-head">
+        <span class="config-section-num">§ 02</span>
+        <span class="config-section-title">Memory</span>
+      </div>
+
+      <div class="config-row">
+        <div>
+          <div class="config-label">Memory scope</div>
+          <div class="config-hint">Controls whether the unit retains context between cases or keeps each case isolated.</div>
+        </div>
+        <div class="radio-group">
+          {% for val, label, hint in [
+            ("per-case",    "Per case",    "memory is sealed inside each case — no cross-case retention"),
+            ("cross-case",  "Cross-case",  "the unit retains patterns across all cases it has worked"),
+          ] %}
+          <label class="radio-item">
+            <input type="radio" name="memory_scope" value="{{ val }}"
+                   {% if settings.memory_scope == val %}checked{% endif %}>
+            <span class="radio-label">{{ label }}<span class="radio-label-sub">— {{ hint }}</span></span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div><!-- /§02 -->
+
+    <!-- §3 — The record -->
+    <div class="config-section">
+      <div class="config-section-head">
+        <span class="config-section-num">§ 03</span>
+        <span class="config-section-title">The record</span>
+      </div>
+
+      <div class="config-row">
+        <div>
+          <div class="config-label">Date format</div>
+          <div class="config-hint">How dates appear in case files and the registry.</div>
+        </div>
+        <div class="radio-group">
+          {% for val, label, ex in [
+            ("iso",     "ISO 8601",  "2026-06-12"),
+            ("long",    "Long form", "12 June 2026"),
+            ("us",      "US form",   "06/12/2026"),
+          ] %}
+          <label class="radio-item">
+            <input type="radio" name="date_format" value="{{ val }}"
+                   {% if settings.date_format == val %}checked{% endif %}>
+            <span class="radio-label">{{ label }}<span class="radio-label-sub">— {{ ex }}</span></span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div><!-- /§03 -->
+
+    <!-- §4 — Access -->
+    <div class="config-section">
+      <div class="config-section-head">
+        <span class="config-section-num">§ 04</span>
+        <span class="config-section-title">Access</span>
+      </div>
+
+      <div class="config-row">
+        <div>
+          <div class="config-label">Unit access</div>
+          <div class="config-hint">Access to the unit is controlled by invitation. Public registration is not available.</div>
+        </div>
+        <div style="padding-top:10px;display:flex;flex-direction:column;gap:12px">
+          <div class="access-chip">
+            <div style="width:5px;height:5px;border-radius:50%;background:var(--brass-faded)"></div>
+            By invitation
+          </div>
+          <p style="font-family:var(--font-serif);font-style:italic;font-size:13px;color:var(--brass-faded);max-width:360px;line-height:1.6">
+            Invitation management is not yet active. Access is provisioned directly by the unit.
+          </p>
+        </div>
+      </div>
+
+    </div><!-- /§04 -->
+
+    <!-- Submit -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:0.5px solid var(--border-dark)">
+      <p style="font-family:var(--font-serif);font-style:italic;font-size:13px;color:var(--brass-faded)">
+        Changes take effect on the next case opened.
+      </p>
+      <button type="submit" class="btn btn-primary">File the configuration ↗</button>
+    </div>
+
+  </form>
+
+</div>
+{% endblock %}
