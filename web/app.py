@@ -425,6 +425,44 @@ async def run_research(
     return RedirectResponse(f"/cases/{case_id}/operations?run_id={run['id']}", status_code=303)
 
 
+@app.post("/cases/{case_id}/deepen")
+async def deepen_case(case_id: int):
+    case = get_case(case_id)
+    if not case:
+        return HTMLResponse("Case not found", status_code=404)
+
+    # Pull gap text from Oracle's most recent completed output
+    parsed = _load_oracle_output(case_id)
+    gap_text = ""
+    if parsed:
+        # section_iv = "The narrative drift" — Oracle flags gaps and anomalies here
+        gap_text = (parsed.get("section_iv") or "").strip()
+        if not gap_text:
+            # Fall back to last paragraph of section_iii
+            s3 = (parsed.get("section_iii") or "").strip()
+            if s3:
+                gap_text = s3.split("\n\n")[-1].strip()
+
+    scope = f"Second pass — chase the gaps Oracle identified:\n\n{gap_text}" if gap_text else "Second pass — deepen the record; chase anything unresolved from the first run."
+
+    run = create_run(case_id=case_id, scope=scope)
+    add_note(
+        case_id=case_id,
+        content=f"Unit reconvened — session #{run['id']}. Deepening the record.",
+        source="system",
+        agent="the unit",
+    )
+
+    thread = threading.Thread(
+        target=_run_research_background,
+        args=(case_id, run["id"], case["name"], scope),
+        daemon=True,
+    )
+    thread.start()
+
+    return RedirectResponse(f"/cases/{case_id}/operations?run_id={run['id']}", status_code=303)
+
+
 @app.post("/cases/{case_id}/status")
 async def update_status(case_id: int, status: str = Form(...)):
     update_case_status(case_id, status)

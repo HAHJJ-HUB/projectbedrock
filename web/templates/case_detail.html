@@ -135,6 +135,11 @@
       <a href="/cases/{{ case.id }}/file" class="btn btn-primary">View case file ↗</a>
       <a href="/cases/{{ case.id }}/board" class="btn btn-ghost">Evidence board</a>
       <a href="/cases/{{ case.id }}/analyze" class="btn btn-ghost">Narrative analysis</a>
+      {% if runs | selectattr('status', 'equalto', 'complete') | list %}
+      <form method="post" action="/cases/{{ case.id }}/deepen" style="display:inline">
+        <button type="submit" class="btn btn-ghost">Deepen the case</button>
+      </form>
+      {% endif %}
       <form method="post" action="/cases/{{ case.id }}/status" style="display:inline">
         {% if case.status == 'active' %}
         <input type="hidden" name="status" value="closed" style="display:none">
